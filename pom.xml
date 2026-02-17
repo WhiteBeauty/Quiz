@@ -5,11 +5,14 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.Karyakina.Ustenko</groupId>
-    <artifactId>my-labs-project</artifactId>
+    <artifactId>project</artifactId>
     <version>1.0.0-SNAPSHOT</version>
 
     <!--  Это корневой pom, поэтому при сборке не нужно паковать jar - указываем "pom"  -->
     <packaging>pom</packaging>
+    <modules>
+        <module>quiz-constructor-service</module>
+    </modules>
 
     <properties>
         <maven.compiler.release>21</maven.compiler.release>
