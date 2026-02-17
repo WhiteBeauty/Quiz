@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.Karyakina.Ustenko</groupId>
+    <artifactId>my-labs-project</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+
+    <!--  Это корневой pom, поэтому при сборке не нужно паковать jar - указываем "pom"  -->
+    <packaging>pom</packaging>
+
+    <properties>
+        <maven.compiler.release>21</maven.compiler.release>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <maven-surefire-plugin.version>3.2.2</maven-surefire-plugin.version>
+        <maven.shade.plugin.version>3.4.1</maven.shade.plugin.version>
+        <junit.version>6.0.2</junit.version>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <!--  JUnit (Jupiter) для тестирования  -->
+            <dependency>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter</artifactId>
+                <version>${junit.version}</version>
+                <scope>test</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <!-- Плагин для запуска тестов -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>${maven-surefire-plugin.version}</version>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
+</project>

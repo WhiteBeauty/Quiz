@@ -1,0 +1,32 @@
+# Записываем новый .gitignore
+@'
+# Maven
+target/
+**/target/
+**/dependency-reduced-pom.xml
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+
+# Eclipse
+.settings/
+.project
+.classpath
+.factorypath
+
+# System
+.DS_Store
+Thumbs.db
+*.log
+
+# Maven Wrapper (не используем)
+.mvn/
+mvnw
+mvnw.cmd
+
+# Не нужно для многомодульного проекта
+'@ | Out-File -FilePath .gitignore -Encoding UTF8
