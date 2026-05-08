@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Результаты — Quiz Platform</title>
+    <link rel="stylesheet" th:href="@{/css/game.css}">
+</head>
+<body>
+<div class="game-container">
+    <div class="screen">
+        <h1>🏆 Результаты игры</h1>
+        <div class="leaderboard">
+            <div class="leaderboard-row"
+                 th:each="player, iter : ${leaderboard.scores}"
+                 th:classappend="${iter.index == 0} ? 'gold' : ${iter.index == 1} ? 'silver' : ${iter.index == 2} ? 'bronze' : ''">
+                <span class="rank" th:text="${iter.index + 1}"></span>
+                <span class="name" th:text="${player.username}"></span>
+                <span class="score" th:text="${player.score}"></span>
+            </div>
+        </div>
+        <a href="http://localhost:8080/quizzes" class="btn btn-primary btn-lg">На главную</a>
+    </div>
+</div>
+</body>
+</html>

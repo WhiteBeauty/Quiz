@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${room.quizTitle} + ' — Игра'">Игра</title>
+    <link rel="stylesheet" th:href="@{/css/game.css}">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.6.1/sockjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+</head>
+<body>
+<div class="game-container">
+    <!-- Lobby Screen -->
+    <div id="screen-lobby" class="screen">
+        <div class="game-header">
+            <h1 th:text="${room.quizTitle}">Название квиза</h1>
+            <div class="room-code-display">
+                Код комнаты: <strong th:text="${room.roomCode}">ABCDEF</strong>
+            </div>
+        </div>
+
+        <div id="join-form" th:if="${username == ''}">
+            <h2>Присоединиться к игре</h2>
+            <div class="form-group">
+                <input type="text" id="usernameInput" placeholder="Ваше имя" maxlength="50"/>
+            </div>
+            <button onclick="joinGame()" class="btn btn-primary btn-lg">Присоединиться</button>
+        </div>
+
+        <div id="waiting-area">
+            <h2>Ожидание игроков...</h2>
+            <div id="players-list" class="players-list">
+                <div class="player-chip" th:each="player : ${players}" th:text="${player.username}"></div>
+            </div>
+            <p id="player-count">Игроков: <span id="playerCountDisplay" th:text="${players.size()}">0</span></p>
+
+            <div th:if="${room.hostUsername == username}">
+                <button onclick="startGame()" class="btn btn-success btn-lg" id="startBtn">
+                    ▶ Начать игру
+                </button>
+            </div>
+            <div th:unless="${room.hostUsername == username}">
+                <p class="hint">Ожидание хоста (<span th:text="${room.hostUsername}"></span>)...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Question Screen -->
+    <div id="screen-question" class="screen hidden">
+        <div class="question-header-bar">
+            <span id="questionProgress">Вопрос 1/10</span>
+            <div class="timer-bar">
+                <div id="timerFill" class="timer-fill"></div>
+            </div>
+            <span id="timerDisplay">30</span>
+        </div>
+        <div class="question-box">
+            <h2 id="questionText">Текст вопроса</h2>
+        </div>
+        <div id="answerButtons" class="answer-grid"></div>
+        <div id="answerFeedback" class="answer-feedback hidden"></div>
+    </div>
+
+    <!-- Leaderboard Screen -->
+    <div id="screen-leaderboard" class="screen hidden">
+        <h2>Таблица лидеров</h2>
+        <div id="leaderboardList" class="leaderboard"></div>
+        <div id="hostNextBtn" class="hidden" th:if="${room.hostUsername == username}">
+            <button onclick="nextQuestion()" class="btn btn-primary btn-lg">Следующий вопрос ▶</button>
+        </div>
+    </div>
+
+    <!-- Results Screen -->
+    <div id="screen-results" class="screen hidden">
+        <h1>🏆 Игра завершена!</h1>
+        <div id="finalLeaderboard" class="leaderboard"></div>
+        <a th:href="@{'http://localhost:8080/quizzes'}" class="btn btn-primary btn-lg">На главную</a>
+    </div>
+</div>
+
+<script th:inline="javascript">
+    const roomCode = /*[[${room.roomCode}]]*/ 'CODE';
+    const hostUsername = /*[[${room.hostUsername}]]*/ '';
+    let currentUsername = /*[[${username}]]*/ '';
+    let stompClient = null;
+    let questionStartTime = null;
+    let timerInterval = null;
+    let currentTimeLimitSeconds = 30;
+    let answeredCurrentQuestion = false;
+
+    function connectWebSocket() {
+        const socket = new SockJS('/ws');
+        stompClient = Stomp.over(socket);
+        stompClient.debug = null;
+
+        stompClient.connect({}, function () {
+            subscribeToTopics();
+            if (currentUsername) {
+                sendJoin();
+            }
+        });
+    }
+
+    function subscribeToTopics() {
+        stompClient.subscribe('/topic/room/' + roomCode + '/players', function (msg) {
+            const data = JSON.parse(msg.body);
+            document.getElementById('playerCountDisplay').textContent = data.playerCount;
+            const chip = document.createElement('div');
+            chip.className = 'player-chip';
+            chip.textContent = data.username;
+            document.getElementById('players-list').appendChild(chip);
+        });
+
+        stompClient.subscribe('/topic/room/' + roomCode + '/question', function (msg) {
+            const question = JSON.parse(msg.body);
+            showQuestion(question);
+        });
+
+        stompClient.subscribe('/user/queue/answer-result', function (msg) {
+            const result = JSON.parse(msg.body);
+            showAnswerResult(result);
+        });
+
+        stompClient.subscribe('/topic/room/' + roomCode + '/leaderboard', function (msg) {
+            const data = JSON.parse(msg.body);
+            showLeaderboard(data.scores);
+        });
+
+        stompClient.subscribe('/topic/room/' + roomCode + '/finished', function (msg) {
+            const data = JSON.parse(msg.body);
+            showFinalResults(data.finalScores);
+        });
+    }
+
+    function joinGame() {
+        const input = document.getElementById('usernameInput');
+        currentUsername = input.value.trim();
+        if (!currentUsername) return;
+        document.getElementById('join-form').classList.add('hidden');
+        sendJoin();
+    }
+
+    function sendJoin() {
+        stompClient.send('/app/room/' + roomCode + '/join', {},
+            JSON.stringify({ username: currentUsername }));
+    }
+
+    function startGame() {
+        stompClient.send('/app/room/' + roomCode + '/start', {},
+            JSON.stringify({ hostUsername: currentUsername }));
+    }
+
+    function showQuestion(question) {
+        answeredCurrentQuestion = false;
+        document.getElementById('screen-lobby').classList.add('hidden');
+        document.getElementById('screen-leaderboard').classList.add('hidden');
+        const screen = document.getElementById('screen-question');
+        screen.classList.remove('hidden');
+
+        document.getElementById('questionProgress').textContent =
+            'Вопрос ' + (question.questionIndex + 1) + '/' + question.totalQuestions;
+        document.getElementById('questionText').textContent = question.questionText;
+        document.getElementById('answerFeedback').classList.add('hidden');
+
+        const grid = document.getElementById('answerButtons');
+        grid.innerHTML = '';
+        const colors = ['btn-answer-a', 'btn-answer-b', 'btn-answer-c', 'btn-answer-d'];
+        question.answerOptions.forEach(function (opt, i) {
+            const btn = document.createElement('button');
+            btn.className = 'btn-answer ' + (colors[i] || 'btn-answer-a');
+            btn.textContent = opt.text;
+            btn.dataset.optionId = opt.id;
+            btn.onclick = function () { submitAnswer(opt.id); };
+            grid.appendChild(btn);
+        });
+
+        currentTimeLimitSeconds = question.timeLimitSeconds;
+        questionStartTime = Date.now();
+        startTimer(question.timeLimitSeconds);
+    }
+
+    function startTimer(seconds) {
+        clearInterval(timerInterval);
+        const fill = document.getElementById('timerFill');
+        const display = document.getElementById('timerDisplay');
+        let remaining = seconds;
+        display.textContent = remaining;
+        fill.style.width = '100%';
+
+        timerInterval = setInterval(function () {
+            remaining--;
+            display.textContent = remaining;
+            fill.style.width = (remaining / seconds * 100) + '%';
+            if (remaining <= 5) fill.style.background = '#ef4444';
+            if (remaining <= 0) {
+                clearInterval(timerInterval);
+            }
+        }, 1000);
+    }
+
+    function submitAnswer(optionId) {
+        if (answeredCurrentQuestion) return;
+        answeredCurrentQuestion = true;
+        clearInterval(timerInterval);
+
+        const answerTimeMs = Date.now() - questionStartTime;
+        const buttons = document.querySelectorAll('.btn-answer');
+        buttons.forEach(function (b) { b.disabled = true; });
+
+        stompClient.send('/app/room/' + roomCode + '/answer', {}, JSON.stringify({
+            username: currentUsername,
+            answerOptionId: optionId,
+            answerTimeMs: answerTimeMs
+        }));
+    }
+
+    function showAnswerResult(result) {
+        const feedback = document.getElementById('answerFeedback');
+        feedback.classList.remove('hidden', 'correct', 'incorrect');
+        if (result.correct) {
+            feedback.classList.add('correct');
+            feedback.textContent = '✓ Правильно! +' + result.pointsEarned + ' очков';
+        } else {
+            feedback.classList.add('incorrect');
+            feedback.textContent = '✗ Неверно';
+        }
+
+        result.correctOptionIds.forEach(function (id) {
+            const btns = document.querySelectorAll('.btn-answer');
+            btns.forEach(function (b) {
+                if (b.dataset.optionId == id) b.classList.add('correct-highlight');
+            });
+        });
+    }
+
+    function showLeaderboard(scores) {
+        document.getElementById('screen-question').classList.add('hidden');
+        const screen = document.getElementById('screen-leaderboard');
+        screen.classList.remove('hidden');
+        renderScores('leaderboardList', scores);
+
+        if (currentUsername === hostUsername) {
+            document.getElementById('hostNextBtn').classList.remove('hidden');
+        }
+    }
+
+    function nextQuestion() {
+        document.getElementById('screen-leaderboard').classList.add('hidden');
+        document.getElementById('hostNextBtn').classList.add('hidden');
+        stompClient.send('/app/room/' + roomCode + '/next-question', {},
+            JSON.stringify({ hostUsername: currentUsername }));
+    }
+
+    function showFinalResults(scores) {
+        document.getElementById('screen-leaderboard').classList.add('hidden');
+        document.getElementById('screen-results').classList.remove('hidden');
+        renderScores('finalLeaderboard', scores);
+    }
+
+    function renderScores(containerId, scores) {
+        const container = document.getElementById(containerId);
+        container.innerHTML = '';
+        scores.forEach(function (s) {
+            const row = document.createElement('div');
+            row.className = 'leaderboard-row ' + (s.rank === 1 ? 'gold' : s.rank === 2 ? 'silver' : s.rank === 3 ? 'bronze' : '');
+            row.innerHTML = '<span class="rank">' + s.rank + '</span>' +
+                '<span class="name">' + s.username + '</span>' +
+                '<span class="score">' + s.score + '</span>';
+            container.appendChild(row);
+        });
+    }
+
+    connectWebSocket();
+</script>
+</body>
+</html>
