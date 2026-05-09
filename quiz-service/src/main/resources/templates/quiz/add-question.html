@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Добавить вопрос — Quiz Platform</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<nav th:replace="~{fragments/layout :: navbar}"></nav>
+
+<div class="container container-narrow">
+    <h1>Добавить вопрос</h1>
+
+    <div th:if="${errorMessage}" class="alert alert-error" th:text="${errorMessage}"></div>
+
+    <form th:action="@{/quizzes/{id}/questions/add(id=${quizId})}" method="post" th:object="${questionDto}">
+
+        <div class="form-group">
+            <label>Текст вопроса *</label>
+            <textarea th:field="*{text}" rows="3" placeholder="Введите вопрос..."></textarea>
+            <span th:if="${#fields.hasErrors('text')}" th:errors="*{text}" class="field-error"></span>
+        </div>
+
+        <div class="form-group">
+            <label>Время на ответ (секунды)</label>
+            <input type="number" th:field="*{timeLimitSeconds}" min="5" max="120"/>
+            <span th:if="${#fields.hasErrors('timeLimitSeconds')}" th:errors="*{timeLimitSeconds}" class="field-error"></span>
+        </div>
+
+        <h3>Варианты ответов</h3>
+        <p class="hint">Отметьте правильные ответы галочкой</p>
+
+        <div th:each="option, iter : *{answerOptions}" class="answer-option-row">
+            <input type="checkbox" th:field="*{answerOptions[__${iter.index}__].correct}" class="checkbox"/>
+            <input type="text" th:field="*{answerOptions[__${iter.index}__].text}"
+                   th:placeholder="'Вариант ' + ${iter.index + 1}"/>
+        </div>
+        <span th:if="${#fields.hasErrors('answerOptions')}" th:errors="*{answerOptions}" class="field-error"></span>
+
+        <div class="form-actions">
+            <a th:href="@{/quizzes/{id}/questions(id=${quizId})}" class="btn btn-secondary">Отмена</a>
+            <button type="submit" class="btn btn-primary">Добавить вопрос</button>
+        </div>
+    </form>
+</div>
+</body>
+</html>

@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${quiz.title} + ' — Вопросы'">Вопросы</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<nav th:replace="~{fragments/layout :: navbar}"></nav>
+
+<div class="container">
+    <div class="page-header">
+        <div>
+            <h1 th:text="${quiz.title}"></h1>
+            <span class="badge" th:classappend="${quiz.published} ? 'badge-success' : 'badge-warning'"
+                  th:text="${quiz.published} ? 'Опубликован' : 'Черновик'"></span>
+        </div>
+        <div class="header-actions">
+            <a th:href="@{/quizzes/{id}/questions/add(id=${quiz.id})}" class="btn btn-primary">+ Добавить вопрос</a>
+            <form th:unless="${quiz.published}" th:action="@{/quizzes/{id}/publish(id=${quiz.id})}" method="post" style="display:inline">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                <button type="submit" class="btn btn-success"
+                        th:disabled="${quiz.questions.empty}">Опубликовать</button>
+            </form>
+            <form th:if="${quiz.published}" th:action="@{/quizzes/{id}/start-game(id=${quiz.id})}" method="post" style="display:inline">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                <button type="submit" class="btn btn-success">▶ Начать игру</button>
+            </form>
+        </div>
+    </div>
+
+    <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
+    <div th:if="${errorMessage}" class="alert alert-error" th:text="${errorMessage}"></div>
+
+    <div th:if="${quiz.questions.empty}" class="empty-state">
+        <p>Вопросов пока нет. Добавьте первый вопрос!</p>
+    </div>
+
+    <div class="questions-list" th:unless="${quiz.questions.empty}">
+        <div class="question-item" th:each="question, iter : ${quiz.questions}">
+            <div class="question-header">
+                <span class="question-number" th:text="${iter.index + 1}"></span>
+                <p class="question-text" th:text="${question.text}"></p>
+                <div class="question-meta">
+                    <span>⏱ <span th:text="${question.timeLimitSeconds}"></span> сек.</span>
+                    <form th:action="@{/quizzes/{qId}/questions/{id}/delete(qId=${quiz.id}, id=${question.id})}"
+                          method="post" style="display:inline" onsubmit="return confirm('Удалить вопрос?')">
+                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                        <button type="submit" class="btn btn-danger btn-sm">Удалить</button>
+                    </form>
+                </div>
+            </div>
+            <ul class="answer-options">
+                <li th:each="option : ${question.answerOptions}"
+                    th:classappend="${option.correct} ? 'correct' : ''"
+                    th:text="${option.text}">
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>
+</body>
+</html>

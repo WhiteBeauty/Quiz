@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Создать квиз — Quiz Platform</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<nav th:replace="~{fragments/layout :: navbar}"></nav>
+
+<div class="container container-narrow">
+    <h1>Создать новый квиз</h1>
+
+    <form th:action="@{/quizzes/create}" method="post" th:object="${quizDto}">
+        <div class="form-group">
+            <label>Название квиза *</label>
+            <input type="text" th:field="*{title}" placeholder="Например: История России"/>
+            <span th:if="${#fields.hasErrors('title')}" th:errors="*{title}" class="field-error"></span>
+        </div>
+        <div class="form-group">
+            <label>Описание</label>
+            <textarea th:field="*{description}" rows="3" placeholder="Краткое описание квиза"></textarea>
+            <span th:if="${#fields.hasErrors('description')}" th:errors="*{description}" class="field-error"></span>
+        </div>
+        <div class="form-actions">
+            <a th:href="@{/quizzes}" class="btn btn-secondary">Отмена</a>
+            <button type="submit" class="btn btn-primary">Создать и добавить вопросы</button>
+        </div>
+    </form>
+</div>
+</body>
+</html>

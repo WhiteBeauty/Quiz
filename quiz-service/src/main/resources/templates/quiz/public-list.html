@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Каталог квизов — Quiz Platform</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<nav th:replace="~{fragments/layout :: navbar}"></nav>
+
+<div class="container">
+    <div class="page-header">
+        <h1>Каталог квизов</h1>
+    </div>
+
+    <div th:if="${quizzes.empty}" class="empty-state">
+        <p>Опубликованных квизов пока нет.</p>
+    </div>
+
+    <div class="quiz-grid" th:unless="${quizzes.empty}">
+        <div class="quiz-card" th:each="quiz : ${quizzes}">
+            <div class="quiz-card-header">
+                <h3 th:text="${quiz.title}"></h3>
+            </div>
+            <p class="quiz-description" th:text="${quiz.description ?: 'Описание отсутствует'}"></p>
+            <p class="quiz-meta">
+                Автор: <strong th:text="${quiz.author.username}"></strong> |
+                Вопросов: <strong th:text="${quiz.questions.size()}">0</strong>
+            </p>
+        </div>
+    </div>
+</div>
+</body>
+</html>
