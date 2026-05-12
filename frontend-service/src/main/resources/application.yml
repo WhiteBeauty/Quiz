@@ -1,0 +1,29 @@
+server:
+  port: 8082
+  address: 0.0.0.0
+
+quiz-service:
+  url: http://localhost:8080
+  ws-url: ws://localhost:8081
+
+game-service:
+  url: http://localhost:8081
+  ws-url: ws://localhost:8081
+
+jwt:
+  secret: zjTYdh9NrS/2g42y63ZjP/pLcL0g8/3DpIPbcR1edpQ=
+  expiration-ms: 86400000
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/postgres
+    username: postgres
+    password: 123
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+frontend:
+  quiz-url: ${QUIZ_URL:http://localhost:8080}
+  game-url: ${GAME_URL:http://localhost:8081}
