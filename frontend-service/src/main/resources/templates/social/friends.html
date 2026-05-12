@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ru">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Друзья — QuizArena</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet"/>
+    <link rel="stylesheet" th:href="@{/css/style.css}"/>
+</head>
+<body>
+<nav class="navbar">
+    <a class="navbar-brand" th:href="@{/}"><span class="brand-icon">⬡</span><span>QuizArena</span></a>
+    <div class="navbar-links">
+        <a th:href="@{/quizzes/public}">Квизы</a>
+        <a th:href="@{/game/lobby}">Играть</a>
+        <a th:href="@{/friends}">Друзья</a>
+        <a th:href="@{/leaderboard}">Рейтинг</a>
+    </div>
+    <div class="navbar-actions">
+        <a th:href="@{/dashboard}" class="btn btn-ghost">Кабинет</a>
+        <a th:href="@{/auth/logout}" class="btn btn-outline">Выйти</a>
+    </div>
+</nav>
+
+<div class="dashboard" style="max-width: 960px; margin: 0 auto;">
+    <div class="alert alert-danger" th:if="${error != null}" th:text="${error}"></div>
+    <div class="alert alert-success" th:if="${inviteSuccess != null}" th:text="${inviteSuccess}"></div>
+
+    <h1>Друзья и приглашения</h1>
+
+    <section class="dashboard-section" style="margin-top: 1.5rem;">
+        <h2>Поиск</h2>
+        <form th:action="@{/friends/search}" method="post" class="auth-form" style="display:flex; gap:.5rem; align-items:flex-end;">
+            <div class="form-group" style="flex:1;">
+                <label>Ник или email</label>
+                <input type="text" name="q" th:value="${searchQuery}" placeholder="минимум 2 символа" required/>
+            </div>
+            <button type="submit" class="btn btn-primary">Найти</button>
+        </form>
+        <div th:if="${searchResults != null}" style="margin-top:1rem;">
+            <table class="quiz-list" style="width:100%;">
+                <tr th:each="u : ${searchResults}">
+                    <td th:text="${u.username}">user</td>
+                    <td th:text="${u.email}">mail</td>
+                    <td>
+                        <form th:action="@{/friends/request}" method="post" style="display:inline;">
+                            <input type="hidden" name="targetUserId" th:value="${u.id}"/>
+                            <button type="submit" class="btn btn-sm btn-outline">В друзья</button>
+                        </form>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </section>
+
+    <div class="dashboard-grid" style="margin-top:2rem;">
+        <section class="dashboard-section">
+            <h2>Входящие заявки</h2>
+            <div th:if="${incoming == null or incoming.empty}" class="empty-state"><p>Нет заявок</p></div>
+            <div th:each="r : ${incoming}" class="quiz-list-item" style="display:flex; justify-content:space-between; align-items:center;">
+                <span th:text="${r.otherUsername}">user</span>
+                <span>
+                    <form th:action="@{'/friends/accept/' + ${r.friendshipId}}" method="post" style="display:inline;">
+                        <button type="submit" class="btn btn-sm btn-primary">Принять</button>
+                    </form>
+                    <form th:action="@{'/friends/decline/' + ${r.friendshipId}}" method="post" style="display:inline;">
+                        <button type="submit" class="btn btn-sm btn-outline">Отклонить</button>
+                    </form>
+                </span>
+            </div>
+        </section>
+
+        <section class="dashboard-section">
+            <h2>Исходящие</h2>
+            <div th:if="${outgoing == null or outgoing.empty}" class="empty-state"><p>Нет исходящих</p></div>
+            <div th:each="r : ${outgoing}" class="quiz-list-item" style="display:flex; justify-content:space-between;">
+                <span th:text="${r.otherUsername}">user</span>
+                <form th:action="@{'/friends/cancel/' + ${r.friendshipId}}" method="post">
+                    <button type="submit" class="btn btn-sm btn-ghost">Отменить</button>
+                </form>
+            </div>
+        </section>
+    </div>
+
+    <section class="dashboard-section" style="margin-top:2rem;">
+        <h2>Мои друзья</h2>
+        <div th:if="${friends == null or friends.empty}" class="empty-state"><p>Список пуст</p></div>
+        <div th:each="f : ${friends}" class="quiz-list-item" style="display:flex; justify-content:space-between; align-items:center;">
+            <span th:text="'@' + ${f.username}">@friend</span>
+            <span>
+                <a th:href="@{'/friends/chat/' + ${f.userId}}" class="btn btn-sm btn-outline">Чат</a>
+                <form th:action="@{/friends/remove}" method="post" style="display:inline;">
+                    <input type="hidden" name="userId" th:value="${f.userId}"/>
+                    <button type="submit" class="btn btn-sm btn-ghost">Удалить</button>
+                </form>
+            </span>
+        </div>
+    </section>
+
+    <section class="dashboard-section" style="margin-top:2rem;" th:if="${friends != null and !friends.isEmpty()}">
+        <h2>Приглашение в игру по email</h2>
+        <p class="auth-subtitle">Выберите друга и тип приглашения. В письме будет одноразовая ссылка.</p>
+        <form th:action="@{/friends/invite}" method="post" class="auth-form">
+            <div class="form-group">
+                <label>Друг</label>
+                <select name="friendUserId" required>
+                    <option th:each="f : ${friends}" th:value="${f.userId}" th:text="${f.username}"></option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Тип</label>
+                <select name="inviteType" required>
+                    <option value="JOIN_EXISTING">Присоединиться к комнате</option>
+                    <option value="CREATE_NEW_GAME">Новая игра (квиз)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Код комнаты (для присоединения)</label>
+                <select name="roomCode">
+                    <option value="">— выберите —</option>
+                    <option th:each="room : ${myRooms}" th:value="${room.code}" th:text="|${room.code} (${room.status})|"></option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Квиз (для новой игры)</label>
+                <select name="quizId">
+                    <option th:each="q : ${quizzesForInvite}" th:value="${q.id}" th:text="${q.title}"></option>
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary">Отправить приглашение</button>
+        </form>
+    </section>
+</div>
+</body>
+</html>

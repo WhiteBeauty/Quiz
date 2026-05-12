@@ -19,6 +19,7 @@ public class AuthController {
     @GetMapping("/login")
     public String loginPage(@RequestParam(required = false) String error,
                             @RequestParam(required = false) String registered,
+                            @RequestParam(required = false) String redirect,
                             Model model) {
         if (error != null) {
             model.addAttribute("error", "Неверный email или пароль");
@@ -26,16 +27,23 @@ public class AuthController {
         if (registered != null) {
             model.addAttribute("success", "Регистрация успешна! Войдите в аккаунт");
         }
+        if (redirect != null && isSafeRedirect(redirect)) {
+            model.addAttribute("redirect", redirect);
+        }
         return "auth/login";
     }
 
     @PostMapping("/login")
     public String login(@RequestParam String email,
                         @RequestParam String password,
+                        @RequestParam(required = false) String redirect,
                         HttpServletResponse response) {
         try {
             AuthResponseDto auth = quizServiceClient.login(email, password);
             addTokenCookie(response, auth.getToken());
+            if (redirect != null && isSafeRedirect(redirect)) {
+                return "redirect:" + redirect;
+            }
             return "redirect:/dashboard";
         } catch (Exception e) {
             return "redirect:/auth/login?error=true";
@@ -76,5 +84,12 @@ public class AuthController {
         cookie.setPath("/");
         cookie.setHttpOnly(true);
         response.addCookie(cookie);
+    }
+
+    private static boolean isSafeRedirect(String redirect) {
+        return redirect.startsWith("/")
+                && !redirect.startsWith("//")
+                && !redirect.contains("\n")
+                && !redirect.contains("\r");
     }
 }

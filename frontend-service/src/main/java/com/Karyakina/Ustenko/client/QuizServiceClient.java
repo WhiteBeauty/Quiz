@@ -6,7 +6,9 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import com.Karyakina.Ustenko.dto.*;
+import com.Karyakina.Ustenko.dto.social.*;
 
+import java.net.URLEncoder;
 import java.util.List;
 import java.util.Map;
 
@@ -159,6 +161,154 @@ public class QuizServiceClient {
                 .uri(quizServiceUrl + "/api/quizzes/search?keyword=" + keyword)
                 .retrieve()
                 .bodyToMono(new ParameterizedTypeReference<List<QuizDto>>() {})
+                .block();
+    }
+
+    public List<UserSearchHitDto> searchFriends(String q, String token) {
+        return webClientBuilder.build()
+                .get()
+                .uri(quizServiceUrl + "/api/friends/search?q=" + URLEncoder.encode(q, java.nio.charset.StandardCharsets.UTF_8))
+                .header("Authorization", "Bearer " + token)
+                .retrieve()
+                .bodyToMono(new ParameterizedTypeReference<List<UserSearchHitDto>>() {})
+                .block();
+    }
+
+    public void sendFriendRequest(Long targetUserId, String token) {
+        webClientBuilder.build()
+                .post()
+                .uri(quizServiceUrl + "/api/friends/requests")
+                .header("Authorization", "Bearer " + token)
+                .bodyValue(Map.of("targetUserId", targetUserId))
+                .retrieve()
+                .toBodilessEntity()
+                .block();
+    }
+
+    public void acceptFriendRequest(Long friendshipId, String token) {
+        webClientBuilder.build()
+                .post()
+                .uri(quizServiceUrl + "/api/friends/requests/" + friendshipId + "/accept")
+                .header("Authorization", "Bearer " + token)
+                .retrieve()
+                .toBodilessEntity()
+                .block();
+    }
+
+    public void declineFriendRequest(Long friendshipId, String token) {
+        webClientBuilder.build()
+                .post()
+                .uri(quizServiceUrl + "/api/friends/requests/" + friendshipId + "/decline")
+                .header("Authorization", "Bearer " + token)
+                .retrieve()
+                .toBodilessEntity()
+                .block();
+    }
+
+    public void cancelFriendRequest(Long friendshipId, String token) {
+        webClientBuilder.build()
+                .delete()
+                .uri(quizServiceUrl + "/api/friends/requests/" + friendshipId)
+                .header("Authorization", "Bearer " + token)
+                .retrieve()
+                .toBodilessEntity()
+                .block();
+    }
+
+    public List<FriendDto> listFriends(String token) {
+        return webClientBuilder.build()
+                .get()
+                .uri(quizServiceUrl + "/api/friends")
+                .header("Authorization", "Bearer " + token)
+                .retrieve()
+                .bodyToMono(new ParameterizedTypeReference<List<FriendDto>>() {})
+                .block();
+    }
+
+    public List<FriendRequestDto> listIncomingFriendRequests(String token) {
+        return webClientBuilder.build()
+                .get()
+                .uri(quizServiceUrl + "/api/friends/requests/incoming")
+                .header("Authorization", "Bearer " + token)
+                .retrieve()
+                .bodyToMono(new ParameterizedTypeReference<List<FriendRequestDto>>() {})
+                .block();
+    }
+
+    public List<FriendRequestDto> listOutgoingFriendRequests(String token) {
+        return webClientBuilder.build()
+                .get()
+                .uri(quizServiceUrl + "/api/friends/requests/outgoing")
+                .header("Authorization", "Bearer " + token)
+                .retrieve()
+                .bodyToMono(new ParameterizedTypeReference<List<FriendRequestDto>>() {})
+                .block();
+    }
+
+    public void removeFriend(Long friendUserId, String token) {
+        webClientBuilder.build()
+                .delete()
+                .uri(quizServiceUrl + "/api/friends/" + friendUserId)
+                .header("Authorization", "Bearer " + token)
+                .retrieve()
+                .toBodilessEntity()
+                .block();
+    }
+
+    public GameInviteSendResponseDto createGameInvite(String token, Map<String, Object> body) {
+        return webClientBuilder.build()
+                .post()
+                .uri(quizServiceUrl + "/api/game-invites")
+                .header("Authorization", "Bearer " + token)
+                .bodyValue(body)
+                .retrieve()
+                .bodyToMono(GameInviteSendResponseDto.class)
+                .block();
+    }
+
+    public GameInviteResultDto consumeGameInvite(String rawToken, String token) {
+        return webClientBuilder.build()
+                .post()
+                .uri(quizServiceUrl + "/api/game-invites/consume")
+                .header("Authorization", "Bearer " + token)
+                .bodyValue(Map.of("token", rawToken))
+                .retrieve()
+                .bodyToMono(GameInviteResultDto.class)
+                .block();
+    }
+
+    public ChatHistoryPageDto getChatMessages(Long peerUserId, String before, int limit, String token) {
+        StringBuilder uri = new StringBuilder(quizServiceUrl + "/api/chat/" + peerUserId + "/messages?limit=" + limit);
+        if (before != null && !before.isBlank()) {
+            uri.append("&before=").append(URLEncoder.encode(before, java.nio.charset.StandardCharsets.UTF_8));
+        }
+        return webClientBuilder.build()
+                .get()
+                .uri(uri.toString())
+                .header("Authorization", "Bearer " + token)
+                .retrieve()
+                .bodyToMono(ChatHistoryPageDto.class)
+                .block();
+    }
+
+    public void sendChatMessage(Long peerUserId, String text, String token) {
+        webClientBuilder.build()
+                .post()
+                .uri(quizServiceUrl + "/api/chat/" + peerUserId + "/messages")
+                .header("Authorization", "Bearer " + token)
+                .bodyValue(Map.of("text", text))
+                .retrieve()
+                .toBodilessEntity()
+                .block();
+    }
+
+    public void markChatRead(Long peerUserId, Long upToMessageId, String token) {
+        webClientBuilder.build()
+                .post()
+                .uri(quizServiceUrl + "/api/chat/" + peerUserId + "/read?upToMessageId=" + upToMessageId)
+                .header("Authorization", "Bearer " + token)
+                .retrieve()
+                .toBodilessEntity()
                 .block();
     }
 }

@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ru">
+<head>
+    <meta charset="UTF-8"/>
+    <title th:text="'Чат с @' + ${peerUsername}">Чат</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet"/>
+    <link rel="stylesheet" th:href="@{/css/style.css}"/>
+</head>
+<body>
+<nav class="navbar">
+    <a class="navbar-brand" th:href="@{/}"><span class="brand-icon">⬡</span><span>QuizArena</span></a>
+    <div class="navbar-links">
+        <a th:href="@{/friends}">← Друзья</a>
+    </div>
+    <div class="navbar-actions">
+        <span class="nav-user" th:text="'@' + ${user.username}">@me</span>
+    </div>
+</nav>
+
+<div class="dashboard" style="max-width: 720px; margin: 0 auto;">
+    <h1 th:text="'Чат с @' + ${peerUsername}">Чат</h1>
+
+    <div th:if="${hasMore}" style="margin: 1rem 0;">
+        <a class="btn btn-sm btn-outline"
+           th:href="@{/friends/chat/{id}(id=${peerUserId},before=${oldestCursor})}">Загрузить старые</a>
+    </div>
+
+    <div class="dashboard-section" style="min-height: 200px;">
+        <div th:each="m : ${messages}"
+             th:style="${m.senderId == user.id} ? 'margin-bottom:.75rem;padding:.5rem;border-radius:8px;background:rgba(99,102,241,.12);margin-left:2rem;' : 'margin-bottom:.75rem;padding:.5rem;border-radius:8px;background:rgba(255,255,255,.06);margin-right:2rem;'">
+            <div style="font-size:.75rem; opacity:.7;" th:text="${m.createdAt}">time</div>
+            <div th:text="${m.body}">text</div>
+            <div style="font-size:.65rem; opacity:.5; margin-top:.25rem;"
+                 th:if="${m.senderId == user.id}">
+                <span th:if="${m.deliveredAt != null}">доставлено</span>
+                <span th:if="${m.readAt != null}"> · прочитано</span>
+            </div>
+        </div>
+    </div>
+
+    <form th:action="@{'/friends/chat/' + ${peerUserId} + '/send'}" method="post" class="auth-form" style="margin-top:1rem;">
+        <div class="form-group">
+            <label>Сообщение</label>
+            <textarea name="text" rows="3" required maxlength="8000"></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary">Отправить</button>
+    </form>
+</div>
+</body>
+</html>
