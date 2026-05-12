@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ru">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>QuizArena — Платформа онлайн-квизов</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet"/>
+    <link rel="stylesheet" th:href="@{/css/style.css}"/>
+</head>
+<body>
+<nav class="navbar">
+    <a class="navbar-brand" th:href="@{/}">
+        <span class="brand-icon">⬡</span><span>QuizArena</span>
+    </a>
+    <div class="navbar-links">
+        <a th:href="@{/quizzes/public}">Квизы</a>
+        <a th:href="@{/game/lobby}">Играть</a>
+        <a th:href="@{/leaderboard}">Рейтинг</a>
+    </div>
+    <div class="navbar-actions">
+        <th:block th:if="${isAuthenticated}">
+            <a th:href="@{/dashboard}" class="btn btn-ghost" th:text="${currentUsername != null ? currentUsername : 'Кабинет'}">Кабинет</a>
+            <a th:href="@{/auth/logout}" class="btn btn-outline">Выйти</a>
+        </th:block>
+        <th:block th:unless="${isAuthenticated}">
+            <a th:href="@{/auth/login}" class="btn btn-ghost">Войти</a>
+            <a th:href="@{/auth/register}" class="btn btn-primary">Начать</a>
+        </th:block>
+    </div>
+</nav>
+
+<section class="hero">
+    <div class="hero-bg-grid"></div>
+    <div class="hero-content">
+        <div class="hero-badge">🎯 Живые квизы в реальном времени</div>
+        <h1 class="hero-title">Знания — <br/><em>это игра</em></h1>
+        <p class="hero-subtitle">Создавай квизы, приглашай друзей, соревнуйся в реальном времени. Платформа для интеллектуальных баталий.</p>
+        <div class="hero-cta">
+            <a th:href="@{/game/lobby}" class="btn btn-primary btn-lg">Начать игру</a>
+            <a th:href="@{/quizzes/create}" class="btn btn-outline btn-lg">Создать квиз</a>
+        </div>
+        <div class="hero-stats">
+            <div class="stat"><span class="stat-num" th:text="${quizzes != null ? quizzes.size() : 0}">0</span><span>квизов</span></div>
+            <div class="stat-div">—</div>
+            <div class="stat"><span class="stat-num">∞</span><span>возможностей</span></div>
+        </div>
+    </div>
+    <div class="hero-visual">
+        <div class="floating-card card-1">
+            <div class="fc-question">Столица Австралии?</div>
+            <div class="fc-options">
+                <div class="fc-opt correct">✓ Канберра</div>
+                <div class="fc-opt">Сидней</div>
+            </div>
+        </div>
+        <div class="floating-card card-2">
+            <div class="fc-score">+850 очков</div>
+            <div class="fc-time">⚡ 2.3 сек</div>
+        </div>
+        <div class="floating-card card-3">
+            <div class="fc-rank">#1</div>
+            <div class="fc-name">player_pro</div>
+        </div>
+    </div>
+</section>
+
+<section class="section-features">
+    <div class="container">
+        <h2 class="section-title">Как это работает</h2>
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">📝</div>
+                <h3>Создай квиз</h3>
+                <p>Добавляй вопросы с вариантами ответов, настраивай таймер и количество очков за каждый вопрос.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🔗</div>
+                <h3>Пригласи игроков</h3>
+                <p>Поделись 6-значным кодом комнаты. Игроки подключаются мгновенно — без регистрации.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">⚡</div>
+                <h3>Играй вживую</h3>
+                <p>Синхронные вопросы для всех. Чем быстрее ответ — тем больше очков. Таблица лидеров обновляется в реальном времени.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🏆</div>
+                <h3>Смотри статистику</h3>
+                <p>История игр, личный рейтинг, глобальная таблица лидеров. Отслеживай свой прогресс.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="section-quizzes" th:if="${quizzes != null and !quizzes.empty}">
+    <div class="container">
+        <div class="section-header">
+            <h2 class="section-title">Популярные квизы</h2>
+            <a th:href="@{/quizzes/public}" class="btn btn-ghost">Все квизы →</a>
+        </div>
+        <div class="quizzes-grid">
+            <div class="quiz-card" th:each="quiz, stat : ${quizzes}" th:if="${stat.index < 6}">
+                <div class="quiz-card-header">
+                    <span class="quiz-category" th:text="${quiz.category ?: 'Разное'}">Категория</span>
+                    <span class="quiz-count" th:text="${quiz.questionCount + ' вопр.'}">0 вопр.</span>
+                </div>
+                <h3 class="quiz-title" th:text="${quiz.title}">Название квиза</h3>
+                <p class="quiz-author" th:text="'by ' + ${quiz.authorUsername}">by author</p>
+                <a th:href="@{/game/lobby}" class="btn btn-sm btn-primary">Играть</a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="section-leaderboard" th:if="${leaderboard != null and !leaderboard.empty}">
+    <div class="container">
+        <h2 class="section-title">Топ игроков</h2>
+        <div class="leaderboard-preview">
+            <div class="lb-row" th:each="entry : ${leaderboard}">
+                <span class="lb-rank" th:text="${entry.rank}">1</span>
+                <span class="lb-name" th:text="${entry.username}">player</span>
+                <span class="lb-score" th:text="${entry.score + ' очков'}">0 очков</span>
+            </div>
+        </div>
+    </div>
+</section>
+
+<footer class="footer">
+    <p>QuizArena © 2026 — Карякина Е.Р., Устенко Н.В., ИС2-Б23</p>
+</footer>
+</body>
+</html>

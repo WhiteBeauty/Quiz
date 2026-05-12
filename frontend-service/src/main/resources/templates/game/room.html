@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ru">
+<head>
+    <meta charset="UTF-8"/>
+    <title th:text="'Комната ' + ${room.code} + ' — QuizArena'">Комната — QuizArena</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet"/>
+    <link rel="stylesheet" th:href="@{/css/style.css}"/>
+</head>
+<body class="game-page">
+
+<div class="game-layout">
+    <!-- Sidebar -->
+    <aside class="game-sidebar">
+        <div class="gs-header">
+            <a class="navbar-brand small" th:href="@{/}"><span class="brand-icon">⬡</span></a>
+            <div class="room-code-display">
+                <span class="rcd-label">Код комнаты</span>
+                <span class="rcd-code" th:text="${room.code}">ABCDEF</span>
+                <button class="btn-copy" onclick="copyCode()" title="Скопировать">📋</button>
+            </div>
+        </div>
+
+        <div class="gs-players">
+            <h3>Игроки (<span id="playerCount" th:text="${room.participants?.size() ?: 0}">0</span>)</h3>
+            <div id="playerList">
+                <div class="player-row" th:each="p : ${room.participants}">
+                    <span class="player-avatar" th:text="${p.username.substring(0,1).toUpperCase()}">A</span>
+                    <span class="player-name" th:text="${p.username}">player</span>
+                    <span class="player-score" th:text="${p.totalScore}">0</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Host controls -->
+        <div class="gs-controls" th:if="${isHost}">
+            <div id="hostWaiting" th:if="${room.status == 'WAITING'}">
+                <p class="hint">Вы — хост. Начните игру когда все игроки подключатся.</p>
+                <button class="btn btn-primary btn-full" onclick="startGame()">▶ Начать игру</button>
+            </div>
+            <div id="hostInGame" th:if="${room.status == 'IN_PROGRESS'}" style="display:none">
+                <button class="btn btn-outline btn-full" onclick="nextQuestion()">→ Следующий вопрос</button>
+                <button class="btn btn-danger btn-full" style="margin-top:8px" onclick="finishGame()">⏹ Завершить игру</button>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main game area -->
+    <main class="game-main">
+        <!-- Waiting screen -->
+        <div id="screen-waiting" th:if="${room.status == 'WAITING'}">
+            <div class="waiting-screen">
+                <div class="ws-code">
+                    <span>Код для входа:</span>
+                    <strong th:text="${room.code}">ABCDEF</strong>
+                </div>
+                <div class="ws-quiz">
+                    <h2 th:text="${quiz.title}">Название квиза</h2>
+                    <p th:text="${quiz.questionCount + ' вопросов · ' + (quiz.description ?: '')}">0 вопросов</p>
+                </div>
+                <div class="ws-status" th:if="${!isHost}">
+                    <div class="loader"></div>
+                    <p>Ожидаем начала игры...</p>
+                </div>
+                <div th:unless="${isHost}" class="ws-players-count">
+                    <span id="waitCount" th:text="${room.participants?.size() ?: 0}">0</span> игроков подключено
+                </div>
+            </div>
+        </div>
+
+        <!-- Question screen (shown via JS) -->
+        <div id="screen-question" style="display:none">
+            <div class="question-screen">
+                <div class="qs-header">
+                    <div class="qs-progress">
+                        <span id="questionNum">1</span> / <span id="questionTotal" th:text="${quiz.questionCount}">10</span>
+                    </div>
+                    <div class="qs-timer">
+                        <div class="timer-ring">
+                            <span id="timerVal">30</span>
+                        </div>
+                    </div>
+                    <div class="qs-points" id="questionPoints">10 очков</div>
+                </div>
+                <h2 class="qs-text" id="questionText">Текст вопроса</h2>
+                <div class="qs-options" id="optionsContainer"></div>
+                <div id="finishQuizButton" style="display: none; margin-top: 2rem; text-align: center;">
+                    <button onclick="finishQuiz()" class="btn btn-primary btn-lg" style="font-size: 1.2rem; padding: 1rem 2rem;">
+                        🏆 Завершить квиз
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mid-game leaderboard -->
+        <div id="screen-leaderboard" style="display:none">
+            <div class="question-screen">
+                <h2 style="text-align:center; margin-bottom:1rem;">Промежуточный рейтинг</h2>
+                <div id="lbList"></div>
+                <div th:if="${isHost}" style="margin-top: 1.5rem; text-align:center;">
+                    <button id="btn-next-question" class="btn btn-primary btn-lg" onclick="handleNextOrFinish()">
+                        Следующий вопрос ▶
+                    </button>
+                </div>
+                <p th:unless="${isHost}" style="text-align:center; opacity:0.8; margin-top:1rem;">
+                    Ожидайте, пока хост продолжит игру...
+                </p>
+            </div>
+        </div>
+
+        <!-- Answer result overlay -->
+        <div id="screen-answer-result" class="answer-result-overlay" style="display:none">
+            <div class="ar-content">
+                <div class="ar-icon" id="arIcon">✓</div>
+                <h2 id="arTitle">Правильно!</h2>
+                <div class="ar-points" id="arPoints">+150 очков</div>
+            </div>
+        </div>
+
+        <div id="screen-finished" style="display: none; flex-direction: column; align-items: center; justify-content: center; height: 100vh;">
+            <h1>🏆 Игра завершена!</h1>
+            <div id="final-leaderboard" style="width: 100%; max-width: 500px; margin: 20px 0;"></div>
+            <a href="/game/lobby" class="btn btn-outline btn-lg">Вернуться в лобби</a>
+        </div>
+
+    </main>
+</div>
+
+<script th:inline="javascript">
+    const ROOM_CODE = /*[[${room.code}]]*/ 'ABCDEF';
+    const USER_ID = /*[[${user.id}]]*/ 0;
+    const USERNAME = /*[[${user.username}]]*/ 'player';
+    const IS_HOST = /*[[${isHost}]]*/ false;
+    const TOKEN = /*[[${token}]]*/ '';
+    const GAME_SERVICE_URL = /*[[${@environment.getProperty('game-service.url')}]]*/ 'http://localhost:8081';
+    const QUIZ_QUESTIONS = /*[[${quiz.questions}]]*/ [];
+
+    let currentQuestionIndex = /*[[${room.currentQuestionIndex}]]*/ 0;
+    let questionStartTime = null;
+    let timerInterval = null;
+    let hasAnswered = false;
+    let stompClient = null;
+
+    function copyCode() {
+        navigator.clipboard.writeText(ROOM_CODE).then(() => {
+            const btn = document.querySelector('.btn-copy');
+            btn.textContent = '✓';
+            setTimeout(() => btn.textContent = '📋', 1500);
+        });
+    }
+
+    function connectWebSocket() {
+        const SockJS = window.SockJS;
+        const Stomp = window.Stomp;
+        if (!SockJS || !Stomp) {
+            console.warn('WebSocket libraries not loaded, retrying...');
+            setTimeout(connectWebSocket, 1000);
+            return;
+        }
+        const socket = new SockJS(GAME_SERVICE_URL + '/ws');
+        stompClient = Stomp.over(socket);
+        stompClient.debug = null;
+        stompClient.connect({'Authorization': 'Bearer ' + TOKEN}, function() {
+            stompClient.subscribe('/topic/game/' + ROOM_CODE, handleMessage);
+            stompClient.subscribe('/queue/game/' + ROOM_CODE + '/user/' + USER_ID, handlePersonalMessage);
+        }, function(err) {
+            setTimeout(connectWebSocket, 3000);
+        });
+    }
+function finishQuiz() {
+    // Отправляем запрос на завершение игры
+    fetch(GAME_SERVICE_URL + '/api/rooms/' + ROOM_CODE + '/finish', {
+        method: 'POST',
+        headers: {
+            'Authorization': 'Bearer ' + TOKEN,
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => {
+        if (response.ok) {
+            // Показываем финальную таблицу лидеров
+            showFinalLeaderboard();
+        } else {
+            alert('Ошибка при завершении квиза');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Ошибка при завершении квиза');
+    });
+}
+
+function showFinalLeaderboard() {
+    // Скрываем экран вопроса
+    document.getElementById('screen-question').style.display = 'none';
+    document.getElementById('finishQuizButton').style.display = 'none';
+
+    // Загружаем и показываем финальную таблицу лидеров
+    fetch(GAME_SERVICE_URL + '/api/leaderboard/rooms/' + ROOM_CODE, {
+        headers: {
+            'Authorization': 'Bearer ' + TOKEN
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        // Создаем HTML для таблицы лидеров
+        let leaderboardHTML = `
+            <div class="final-leaderboard" style="max-width: 600px; margin: 2rem auto; padding: 2rem;">
+                <h2 style="text-align: center; margin-bottom: 2rem;">🏆 Итоговый рейтинг</h2>
+                <div class="leaderboard-list">
+        `;
+
+        data.forEach((entry, index) => {
+            const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`;
+            const isTopThree = index < 3;
+
+            leaderboardHTML += `
+                <div class="leaderboard-entry ${isTopThree ? 'top-three' : ''}"
+                     style="display: flex; justify-content: space-between; align-items: center;
+                            padding: 1rem; margin-bottom: 0.5rem;
+                            background: ${isTopThree ? 'rgba(255,215,0,0.1)' : 'rgba(255,255,255,0.05)'};
+                            border-radius: 8px; border: ${isTopThree ? '2px solid gold' : '1px solid rgba(255,255,255,0.1)'};">
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <span style="font-size: 1.5rem; font-weight: bold;">${medal}</span>
+                        <span style="font-size: 1.1rem;">${entry.username}</span>
+                    </div>
+                    <span style="font-size: 1.2rem; font-weight: bold; color: #3ecfb0;">
+                        ${entry.score} очков
+                    </span>
+                </div>
+            `;
+        });
+
+        leaderboardHTML += `
+                </div>
+                <div style="text-align: center; margin-top: 2rem;">
+                    <a href="/game/lobby" class="btn btn-outline" style="margin-right: 1rem;">
+                        ← В лобби
+                    </a>
+                    <a href="/" class="btn btn-primary">
+                        На главную
+                    </a>
+                </div>
+            </div>
+        `;
+
+        // Добавляем таблицу на страницу
+        const mainContainer = document.querySelector('.game-main');
+        mainContainer.innerHTML = leaderboardHTML;
+    })
+    .catch(error => {
+        console.error('Error loading leaderboard:', error);
+        alert('Ошибка при загрузке таблицы лидеров');
+    });
+}
+    function handleMessage(frame) {
+        const msg = JSON.parse(frame.body);
+        switch (msg.type) {
+            case 'PLAYER_JOINED': onPlayerJoined(msg.payload); break;
+            case 'GAME_STARTED': onGameStarted(msg.payload); break;
+            case 'NEXT_QUESTION': onNextQuestion(msg.payload); break;
+            case 'LEADERBOARD_UPDATE': onLeaderboard(msg.payload); break;
+            case 'GAME_FINISHED': onGameFinished(msg.payload); break;
+        }
+    }
+
+    function handlePersonalMessage(frame) {
+        const msg = JSON.parse(frame.body);
+        if (msg.type === 'ANSWER_RESULT') {
+            const [correct, points] = msg.payload;
+            showAnswerResult(correct, points);
+        }
+    }
+
+    function onPlayerJoined(username) {
+        refreshPlayerList();
+    }
+
+    function onGameStarted(roomData) {
+    const waitingScreen = document.getElementById('screen-waiting');
+    if (waitingScreen) {
+        waitingScreen.style.display = 'none';
+    }
+
+    if (IS_HOST) {
+        const hostWaiting = document.getElementById('hostWaiting');
+        const hostInGame = document.getElementById('hostInGame');
+        if (hostWaiting) hostWaiting.style.display = 'none';
+        if (hostInGame) hostInGame.style.display = 'block';
+    }
+    currentQuestionIndex = 0;
+    showQuestion(currentQuestionIndex);
+}
+
+function onNextQuestion(roomData) {
+ if (roomData && typeof roomData.currentQuestionIndex === 'number') {
+        currentQuestionIndex = roomData.currentQuestionIndex;
+    } else {
+    currentQuestionIndex++;
+       }
+    const leaderboard = document.getElementById('screen-leaderboard');
+    const answerResult = document.getElementById('screen-answer-result');
+    if (leaderboard) leaderboard.style.display = 'none';
+    if (answerResult) answerResult.style.display = 'none';
+    showQuestion(currentQuestionIndex);
+}
+
+function onLeaderboard(entries) {
+    const questionScreen = document.getElementById('screen-question');
+    if (questionScreen) questionScreen.style.display = 'none';
+
+    const lbList = document.getElementById('lbList');
+    if (lbList) {
+        lbList.innerHTML = entries.map((e, i) =>
+            `<div class="lb-row ${i < 3 ? 'top' : ''}">
+                <span class="lb-rank">${e.rank}</span>
+                <span class="lb-name">${e.username}</span>
+                <span class="lb-score">${e.score} очков</span>
+            </div>`
+        ).join('');
+    }
+
+    const leaderboard = document.getElementById('screen-leaderboard');
+    if (leaderboard) leaderboard.style.display = 'flex';
+    updateNextButtonState();
+}
+
+function onGameFinished(entries, allowFetch = true) {
+    clearTimer();
+    const questionScreen = document.getElementById('screen-question');
+    const leaderboard = document.getElementById('screen-leaderboard');
+    if (questionScreen) questionScreen.style.display = 'none';
+    if (leaderboard) leaderboard.style.display = 'none';
+
+        const finalLb = document.getElementById('final-leaderboard');
+    const safeEntries = Array.isArray(entries) ? entries : [];
+
+    if (safeEntries.length === 0 && allowFetch) {
+        fetch(GAME_SERVICE_URL + '/api/leaderboard/rooms/' + ROOM_CODE, {
+            headers: {'Authorization': 'Bearer ' + TOKEN}
+        })
+            .then(r => r.ok ? r.json() : [])
+            .then(fetchedEntries => onGameFinished(fetchedEntries, false))
+            .catch(console.error);
+    }
+    if (finalLb) {
+        finalLb.innerHTML = safeEntries.map((e, i) =>
+            `<div class="lb-row ${i < 3 ? 'top' : ''}">
+                <span class="lb-rank">${i < 3 ? ['🥇','🥈','🥉'][i] : e.rank}</span>
+                <span class="lb-name">${e.username}</span>
+                <span class="lb-score">${e.score} очков</span>
+            </div>`
+        ).join('');
+    }
+
+    const finished = document.getElementById('screen-finished');
+    if (finished) finished.style.display = 'flex';
+}
+
+function handleNextOrFinish() {
+    const totalQuestions = parseInt(document.getElementById('questionTotal')?.textContent || '0', 10);
+    const isLastQuestion = totalQuestions > 0 && currentQuestionIndex >= totalQuestions - 1;
+    if (isLastQuestion) {
+        finishGame();
+    } else {
+        nextQuestion();
+    }
+}
+
+function updateNextButtonState() {
+    const nextBtn = document.getElementById('btn-next-question');
+    if (!nextBtn) return;
+    const totalQuestions = parseInt(document.getElementById('questionTotal')?.textContent || '0', 10);
+    const isLastQuestion = totalQuestions > 0 && currentQuestionIndex >= totalQuestions - 1;
+    if (isLastQuestion) {
+        nextBtn.textContent = '🏁 Завершить игру';
+        nextBtn.classList.remove('btn-primary');
+        nextBtn.classList.add('btn-danger');
+    } else {
+        nextBtn.textContent = 'Следующий вопрос ▶';
+        nextBtn.classList.remove('btn-danger');
+        nextBtn.classList.add('btn-primary');
+    }
+}
+
+function showQuestion(index) {
+    const questionTotalEl = document.getElementById('questionTotal');
+    const totalQuestions = questionTotalEl ? parseInt(questionTotalEl.textContent) : 0;
+    if (QUIZ_QUESTIONS.length === 0) {
+        console.warn('QUIZ_QUESTIONS is empty!');
+    }
+
+    if (index >= QUIZ_QUESTIONS.length && QUIZ_QUESTIONS.length > 0) {
+        console.warn('Index out of bounds, requesting game finish screen');
+        onGameFinished([]);
+        return;
+    }
+
+    const q = QUIZ_QUESTIONS[index];
+
+    if (!q) {
+        console.error('Question not found at index', index);
+        return;
+    }
+
+    hasAnswered = false;
+    questionStartTime = Date.now();
+
+    document.getElementById('questionNum').textContent = index + 1;
+    document.getElementById('questionText').textContent = q.text || 'Загрузка...';
+    document.getElementById('questionPoints').textContent = (q.points || 10) + ' очков';
+
+    const colors = ['opt-blue', 'opt-red', 'opt-yellow', 'opt-green'];
+    const container = document.getElementById('optionsContainer');
+
+    if (q.answerOptions) {
+        container.innerHTML = q.answerOptions.map((opt, i) =>
+            `<button class="option-btn ${colors[i % 4]}" onclick="submitAnswer(${q.id}, ${opt.id})">
+                <span class="opt-letter">${'ABCD'[i]}</span>
+                <span class="opt-text">${opt.text}</span>
+            </button>`
+        ).join('');
+    }
+
+    document.getElementById('screen-question').style.display = 'flex';
+
+    if (q.timeLimitSeconds) {
+        startTimer(q.timeLimitSeconds);
+    }
+
+    // Показываем/скрываем кнопку завершения
+    const finishButton = document.getElementById('finishQuizButton');
+    if (finishButton) {
+        const isLastQuestion = index === totalQuestions - 1;
+
+        if (isLastQuestion) {
+            finishButton.style.display = 'block';
+        } else {
+            finishButton.style.display = 'none';
+        }
+    }
+}
+
+    function startTimer(seconds) {
+        clearTimer();
+        let remaining = seconds;
+        document.getElementById('timerVal').textContent = remaining;
+        timerInterval = setInterval(() => {
+            remaining--;
+            document.getElementById('timerVal').textContent = remaining;
+            document.getElementById('timerVal').style.color = remaining <= 5 ? '#ef4444' : '';
+            if (remaining <= 0) {
+                clearTimer();
+                if (!hasAnswered) showAnswerResult(false, 0);
+            }
+        }, 1000);
+    }
+
+    function clearTimer() {
+        if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+    }
+
+    function submitAnswer(questionId, optionId) {
+        if (hasAnswered) return;
+        hasAnswered = true;
+        clearTimer();
+        const responseTimeMs = Date.now() - questionStartTime;
+
+        document.querySelectorAll('.option-btn').forEach(b => b.disabled = true);
+
+        fetch(GAME_SERVICE_URL + '/api/rooms/' + ROOM_CODE + '/answers', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + TOKEN},
+            body: JSON.stringify({questionId, selectedOptionId: optionId, responseTimeMs})
+        }).catch(console.error);
+    }
+
+    function showAnswerResult(correct, points) {
+        const overlay = document.getElementById('screen-answer-result');
+        document.getElementById('arIcon').textContent = correct ? '✓' : '✗';
+        document.getElementById('arTitle').textContent = correct ? 'Правильно!' : 'Неправильно';
+        document.getElementById('arPoints').textContent = correct ? '+' + points + ' очков' : '0 очков';
+        overlay.className = 'answer-result-overlay ' + (correct ? 'result-correct' : 'result-wrong');
+        overlay.style.display = 'flex';
+        setTimeout(() => { overlay.style.display = 'none'; }, 2000);
+    }
+
+    function refreshPlayerList() {
+        fetch(GAME_SERVICE_URL + '/api/rooms/' + ROOM_CODE, {
+            headers: {'Authorization': 'Bearer ' + TOKEN}
+        })
+        .then(r => r.json())
+        .then(room => {
+            document.getElementById('playerCount').textContent = room.participants?.length || 0;
+            document.getElementById('waitCount') && (document.getElementById('waitCount').textContent = room.participants?.length || 0);
+            const list = document.getElementById('playerList');
+            if (room.participants) {
+                list.innerHTML = room.participants.map(p =>
+                    `<div class="player-row">
+                        <span class="player-avatar">${p.username[0].toUpperCase()}</span>
+                        <span class="player-name">${p.username}</span>
+                        <span class="player-score">${p.totalScore}</span>
+                    </div>`
+                ).join('');
+            }
+        }).catch(console.error);
+    }
+
+    function startGame() {
+        fetch(GAME_SERVICE_URL + '/api/rooms/' + ROOM_CODE + '/start', {
+            method: 'POST',
+            headers: {'Authorization': 'Bearer ' + TOKEN}
+        }).catch(console.error);
+    }
+
+    function nextQuestion() {
+        fetch(GAME_SERVICE_URL + '/api/rooms/' + ROOM_CODE + '/next', {
+            method: 'POST',
+            headers: {'Authorization': 'Bearer ' + TOKEN}
+        }).catch(console.error);
+    }
+
+    function finishGame() {
+        if (!confirm('Завершить игру?')) return;
+        fetch(GAME_SERVICE_URL + '/api/rooms/' + ROOM_CODE + '/finish', {
+            method: 'POST',
+            headers: {'Authorization': 'Bearer ' + TOKEN}
+        }).catch(console.error);
+    }
+
+    // Init
+    setInterval(refreshPlayerList, 5000);
+    window.addEventListener('load', connectWebSocket);
+</script>
+
+
+</body>
+</html>

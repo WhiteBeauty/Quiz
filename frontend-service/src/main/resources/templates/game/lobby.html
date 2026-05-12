@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ru">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Лобби — QuizArena</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet"/>
+    <link rel="stylesheet" th:href="@{/css/style.css}"/>
+</head>
+<body>
+<nav class="navbar">
+    <a class="navbar-brand" th:href="@{/}"><span class="brand-icon">⬡</span><span>QuizArena</span></a>
+    <div class="navbar-links">
+        <a th:href="@{/quizzes/public}">Квизы</a>
+        <a th:href="@{/game/lobby}" class="active">Играть</a>
+        <a th:href="@{/leaderboard}">Рейтинг</a>
+    </div>
+    <div class="navbar-actions">
+        <a th:href="@{/dashboard}" class="btn btn-ghost">Кабинет</a>
+    </div>
+</nav>
+
+<div class="page-container">
+    <h1 class="page-title">Игровое лобби</h1>
+
+    <div th:if="${param.error != null}" class="alert alert-error">
+        <span th:text="${param.error[0] == 'join' ? 'Комната не найдена или игра уже началась' : 'Не удалось создать комнату'}">Ошибка</span>
+    </div>
+
+    <div class="lobby-grid">
+        <!-- Войти в комнату -->
+        <div class="lobby-card">
+            <div class="lobby-card-icon">🔑</div>
+            <h2>Войти в комнату</h2>
+            <p>Введите 6-значный код, который дал вам хост игры</p>
+            <form th:action="@{/game/join}" method="post" class="lobby-form">
+                <input type="text" name="roomCode" placeholder="ABCDEF"
+                       maxlength="6" style="text-transform:uppercase; letter-spacing:4px; font-size:1.4rem; text-align:center"
+                       required/>
+                <button type="submit" class="btn btn-primary btn-full">Войти</button>
+            </form>
+        </div>
+
+        <!-- Создать комнату -->
+        <div class="lobby-card lobby-card-create">
+            <div class="lobby-card-icon">🎮</div>
+            <h2>Создать комнату</h2>
+            <p>Выберите квиз и начните игру для своих игроков</p>
+            <div th:if="${publishedQuizzes == null or publishedQuizzes.empty}" class="empty-state">
+                <p>Нет опубликованных квизов</p>
+                <a th:href="@{/quizzes/create}" class="btn btn-outline btn-sm">Создать квиз</a>
+            </div>
+            <form th:action="@{/game/create}" method="post" class="lobby-form"
+                  th:unless="${publishedQuizzes == null or publishedQuizzes.empty}">
+                <select name="quizId" required>
+                    <option value="">— Выберите квиз —</option>
+                    <option th:each="quiz : ${publishedQuizzes}"
+                            th:value="${quiz.id}"
+                            th:text="${quiz.title + ' (' + quiz.questionCount + ' вопр.)'}">Квиз</option>
+                </select>
+                <button type="submit" class="btn btn-primary btn-full">Создать комнату</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="lobby-hint">
+        <p>💡 Нет нужного квиза? <a th:href="@{/quizzes/create}">Создайте свой</a> или найдите <a th:href="@{/quizzes/public}">в каталоге</a></p>
+    </div>
+</div>
+
+<footer class="footer"><p>QuizArena © 2026</p></footer>
+</body>
+</html>

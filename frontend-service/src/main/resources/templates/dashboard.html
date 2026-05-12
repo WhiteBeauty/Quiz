@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ru">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Кабинет — QuizArena</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet"/>
+    <link rel="stylesheet" th:href="@{/css/style.css}"/>
+</head>
+<body>
+<nav class="navbar">
+    <a class="navbar-brand" th:href="@{/}"><span class="brand-icon">⬡</span><span>QuizArena</span></a>
+    <div class="navbar-links">
+        <a th:href="@{/quizzes/public}">Квизы</a>
+        <a th:href="@{/game/lobby}">Играть</a>
+        <a th:href="@{/leaderboard}">Рейтинг</a>
+    </div>
+    <div class="navbar-actions">
+        <span class="nav-user" th:text="'@' + ${user.username}">@user</span>
+        <a th:href="@{/auth/logout}" class="btn btn-outline">Выйти</a>
+    </div>
+</nav>
+
+<div class="dashboard">
+    <div class="alert alert-success" th:if="${param.quizDeleted != null and param.quizDeleted[0] == 'true'}"
+         style="margin-bottom: 1rem;">
+        Квиз удален.
+    </div>
+    <div class="alert alert-danger" th:if="${param.quizDeleted != null and param.quizDeleted[0] == 'false'}"
+         style="margin-bottom: 1rem;">
+        Не удалось удалить квиз.
+    </div>
+    <div class="alert alert-danger" th:if="${error != null}" style="margin-bottom: 1rem;" th:text="${error}">
+        Ошибка
+    </div>
+    <div class="dashboard-header">
+        <div>
+            <h1>Привет, <em th:text="${user.username}">игрок</em></h1>
+            <p th:text="${user.email}">email</p>
+        </div>
+        <div class="dashboard-header-actions">
+            <a th:href="@{/quizzes/create}" class="btn btn-primary">+ Создать квиз</a>
+            <a th:href="@{/game/lobby}" class="btn btn-outline">Начать игру</a>
+        </div>
+    </div>
+
+    <div class="dashboard-grid">
+        <section class="dashboard-section">
+            <div class="section-header">
+                <h2>Мои квизы</h2>
+                <a th:href="@{/quizzes/create}" class="btn btn-sm btn-ghost">+ Новый</a>
+            </div>
+            <div th:if="${myQuizzes == null or myQuizzes.empty}" class="empty-state">
+                <div class="empty-icon">📝</div>
+                <p>У вас пока нет квизов</p>
+                <a th:href="@{/quizzes/create}" class="btn btn-primary btn-sm">Создать первый</a>
+            </div>
+            <div class="quiz-list" th:unless="${myQuizzes == null or myQuizzes.empty}">
+                <div class="quiz-list-item" th:each="quiz : ${myQuizzes}">
+                    <div class="qli-info">
+                        <span class="qli-title" th:text="${quiz.title}">Название</span>
+                        <span class="qli-meta" th:text="${quiz.questionCount + ' вопр. · ' + (quiz.category ?: 'без категории')}">0 вопр.</span>
+                    </div>
+                    <div class="qli-status">
+                        <span class="badge" th:classappend="${quiz.published ? 'badge-green' : 'badge-gray'}"
+                              th:text="${quiz.published ? 'Опубликован' : 'Черновик'}">Статус</span>
+                    </div>
+                    <div class="qli-actions">
+                        <a th:href="@{/quizzes/{id}/questions(id=${quiz.id})}" class="btn btn-sm btn-ghost">Вопросы</a>
+                        <form th:action="@{/quizzes/{id}/publish(id=${quiz.id})}" method="post" style="display:inline"
+                              th:unless="${quiz.published}">
+                            <button type="submit" class="btn btn-sm btn-outline">Опубликовать</button>
+                        </form>
+                        <form th:action="@{/quizzes/{id}/delete(id=${quiz.id})}" method="post" style="display:inline"
+                              onsubmit="return confirm('Удалить квиз?')">
+                            <button type="submit" class="btn btn-sm btn-danger">Удалить</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="dashboard-section">
+            <div class="section-header">
+                <h2>Мои игры</h2>
+                <a th:href="@{/game/lobby}" class="btn btn-sm btn-ghost">+ Создать</a>
+            </div>
+            <div th:if="${myRooms == null or myRooms.empty}" class="empty-state">
+                <div class="empty-icon">🎮</div>
+                <p>Вы ещё не проводили игры</p>
+                <a th:href="@{/game/lobby}" class="btn btn-primary btn-sm">Начать игру</a>
+            </div>
+            <div class="room-list" th:unless="${myRooms == null or myRooms.empty}">
+                <div class="room-list-item" th:each="room : ${myRooms}">
+                    <div class="rli-code" th:text="${room.code}">ABCDEF</div>
+                    <div class="rli-info">
+                        <span class="badge"
+                              th:classappend="${room.status == 'WAITING' ? 'badge-yellow' : room.status == 'IN_PROGRESS' ? 'badge-green' : 'badge-gray'}"
+                              th:text="${room.status == 'WAITING' ? 'Ожидание' : room.status == 'IN_PROGRESS' ? 'В игре' : 'Завершена'}">Статус</span>
+                        <span th:text="${room.participants != null ? room.participants.size() + ' игр.' : '0 игр.'}">0 игр.</span>
+                    </div>
+                    <div class="rli-actions">
+                        <a th:href="@{/game/room/{code}(code=${room.code})}" class="btn btn-sm btn-ghost"
+                           th:if="${room.status != 'FINISHED'}">Открыть</a>
+                        <a th:href="@{/game/room/{code}/results(code=${room.code})}" class="btn btn-sm btn-ghost"
+                           th:if="${room.status == 'FINISHED'}">Результаты</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+</div>
+
+<footer class="footer"><p>QuizArena © 2026</p></footer>
+</body>
+</html>

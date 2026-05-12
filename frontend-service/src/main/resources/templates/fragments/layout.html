@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ru">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title th:text="${pageTitle != null ? pageTitle + ' — QuizArena' : 'QuizArena'}">QuizArena</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet"/>
+    <link rel="stylesheet" th:href="@{/css/style.css}"/>
+</head>
+<body>
+
+<nav class="navbar">
+    <a class="navbar-brand" th:href="@{/}">
+        <span class="brand-icon">⬡</span>
+        <span>QuizArena</span>
+    </a>
+    <div class="navbar-links">
+        <a th:href="@{/quizzes/public}">Квизы</a>
+        <a th:href="@{/game/lobby}">Играть</a>
+        <a th:href="@{/leaderboard}">Рейтинг</a>
+    </div>
+    <div class="navbar-actions">
+        <a th:href="@{/dashboard}" class="btn btn-ghost">Кабинет</a>
+        <a th:href="@{/auth/logout}" class="btn btn-outline">Выйти</a>
+    </div>
+</nav>
+
+<main th:replace="${content}">Content here</main>
+
+<footer class="footer">
+    <p>QuizArena © 2026 — Карякина Е.Р., Устенко Н.В., ИС2-Б23</p>
+</footer>
+
+</body>
+</html>

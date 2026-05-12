@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ru">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Редактировать вопрос — QuizArena</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet"/>
+    <link rel="stylesheet" th:href="@{/css/style.css}"/>
+</head>
+<body>
+<nav class="navbar">
+    <a class="navbar-brand" th:href="@{/}"><span class="brand-icon">⬡</span><span>QuizArena</span></a>
+    <div class="navbar-actions">
+        <a th:href="@{/dashboard}" class="btn btn-ghost">Кабинет</a>
+    </div>
+</nav>
+
+<div class="page-container narrow">
+    <div class="page-header">
+        <a th:href="@{/quizzes/{id}/questions(id=${quizId})}" class="back-link">← К вопросам</a>
+        <h1>Редактировать вопрос</h1>
+    </div>
+
+    <div class="alert alert-error" th:if="${error}" th:text="${error}"></div>
+
+    <form th:action="@{/quizzes/{quizId}/questions/{questionId}/edit(quizId=${quizId},questionId=${questionId})}"
+          method="post" class="form-card">
+        <div class="form-group">
+            <label>Текст вопроса *</label>
+            <textarea name="text" rows="3" required th:text="${question.text}">Текст вопроса</textarea>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Время (секунд)</label>
+                <input type="number" name="timeLimitSeconds" min="5" max="120"
+                       th:value="${question.timeLimitSeconds}"/>
+            </div>
+            <div class="form-group">
+                <label>Очки</label>
+                <input type="number" name="points" min="1" max="100"
+                       th:value="${question.points}"/>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Варианты ответа (минимум 2) *</label>
+            <div id="options-container">
+                <div class="option-row">
+                    <input type="checkbox" name="correctIndexes" value="0" title="Правильный?"
+                           th:checked="${correctIndexes != null and #lists.contains(correctIndexes, 0)}"/>
+                    <input type="text" name="optionTexts" placeholder="Вариант 1" required
+                           th:value="${question.answerOptions.size() > 0 ? question.answerOptions[0].text : ''}"/>
+                </div>
+                <div class="option-row">
+                    <input type="checkbox" name="correctIndexes" value="1" title="Правильный?"
+                           th:checked="${correctIndexes != null and #lists.contains(correctIndexes, 1)}"/>
+                    <input type="text" name="optionTexts" placeholder="Вариант 2" required
+                           th:value="${question.answerOptions.size() > 1 ? question.answerOptions[1].text : ''}"/>
+                </div>
+                <div class="option-row">
+                    <input type="checkbox" name="correctIndexes" value="2" title="Правильный?"
+                           th:checked="${correctIndexes != null and #lists.contains(correctIndexes, 2)}"/>
+                    <input type="text" name="optionTexts" placeholder="Вариант 3 (необязательно)"
+                           th:value="${question.answerOptions.size() > 2 ? question.answerOptions[2].text : ''}"/>
+                </div>
+                <div class="option-row">
+                    <input type="checkbox" name="correctIndexes" value="3" title="Правильный?"
+                           th:checked="${correctIndexes != null and #lists.contains(correctIndexes, 3)}"/>
+                    <input type="text" name="optionTexts" placeholder="Вариант 4 (необязательно)"
+                           th:value="${question.answerOptions.size() > 3 ? question.answerOptions[3].text : ''}"/>
+                </div>
+            </div>
+            <p class="form-hint">☑ Отметьте правильные варианты</p>
+        </div>
+
+        <div class="form-actions">
+            <a th:href="@{/quizzes/{id}/questions(id=${quizId})}" class="btn btn-ghost">Отмена</a>
+            <button type="submit" class="btn btn-primary">Сохранить изменения</button>
+        </div>
+    </form>
+</div>
+
+<footer class="footer"><p>QuizArena © 2026</p></footer>
+</body>
+</html>

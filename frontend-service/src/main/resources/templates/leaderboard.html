@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ru">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Рейтинг — QuizArena</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet"/>
+    <link rel="stylesheet" th:href="@{/css/style.css}"/>
+</head>
+<body>
+<nav class="navbar">
+    <a class="navbar-brand" th:href="@{/}"><span class="brand-icon">⬡</span><span>QuizArena</span></a>
+    <div class="navbar-links">
+        <a th:href="@{/quizzes/public}">Квизы</a>
+        <a th:href="@{/game/lobby}">Играть</a>
+        <a th:href="@{/leaderboard}" class="active">Рейтинг</a>
+    </div>
+    <div class="navbar-actions">
+        <a th:href="@{/dashboard}" class="btn btn-ghost">Кабинет</a>
+    </div>
+</nav>
+
+<div class="page-container narrow">
+    <div class="page-header centered">
+        <h1>🏆 Глобальный рейтинг</h1>
+        <p>Топ-10 лучших игроков платформы</p>
+    </div>
+
+    <div class="alert alert-error" th:if="${error}" th:text="${error}"></div>
+
+    <div th:if="${top10 == null or top10.empty}" class="empty-state large">
+        <div class="empty-icon">📊</div>
+        <p>Рейтинг пока пуст. Сыграйте первыми!</p>
+        <a th:href="@{/game/lobby}" class="btn btn-primary">Начать игру</a>
+    </div>
+
+    <div class="global-leaderboard" th:unless="${top10 == null or top10.empty}">
+        <div class="lb-row" th:each="entry, stat : ${top10}"
+             th:classappend="${stat.index < 3 ? ' top' : ''}">
+            <span class="lb-medal" th:text="${stat.index == 0 ? '🥇' : stat.index == 1 ? '🥈' : stat.index == 2 ? '🥉' : stat.count}">1</span>
+            <div class="lb-player">
+                <div class="lb-avatar" th:text="${entry.username.substring(0,1).toUpperCase()}">A</div>
+                <span class="lb-name" th:text="${entry.username}">player</span>
+            </div>
+            <div class="lb-stats">
+                <span class="lb-score" th:text="${entry.score + ' очков'}">0 очков</span>
+                <span class="lb-correct" th:text="${entry.correctAnswers + ' верных'}">0 верных</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<footer class="footer"><p>QuizArena © 2026</p></footer>
+</body>
+</html>

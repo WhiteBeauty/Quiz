@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ru">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Вход — QuizArena</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet"/>
+    <link rel="stylesheet" th:href="@{/css/style.css}"/>
+</head>
+<body class="auth-page">
+<div class="auth-split">
+    <div class="auth-left">
+        <a class="auth-logo" th:href="@{/}"><span class="brand-icon">⬡</span> QuizArena</a>
+        <div class="auth-tagline">
+            <h2>Знания — это сила. <em>Скорость — это победа.</em></h2>
+        </div>
+        <div class="auth-decoration">
+            <div class="deco-card deco-1">⚡ +1200 очков</div>
+            <div class="deco-card deco-2">🏆 #1 место</div>
+            <div class="deco-card deco-3">🎯 12/12 верно</div>
+        </div>
+    </div>
+    <div class="auth-right">
+        <div class="auth-form-container">
+            <h1>Добро пожаловать</h1>
+            <p class="auth-subtitle">Войдите, чтобы продолжить</p>
+
+            <div class="alert alert-success" th:if="${success}" th:text="${success}"></div>
+            <div class="alert alert-error" th:if="${error}" th:text="${error}"></div>
+
+            <form th:action="@{/auth/login}" method="post" class="auth-form">
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" name="email" placeholder="you@example.com" required/>
+                </div>
+                <div class="form-group">
+                    <label>Пароль</label>
+                    <input type="password" name="password" placeholder="••••••••" required/>
+                </div>
+                <button type="submit" class="btn btn-primary btn-full">Войти</button>
+            </form>
+
+            <p class="auth-switch">Нет аккаунта? <a th:href="@{/auth/register}">Зарегистрироваться</a></p>
+        </div>
+    </div>
+</div>
+</body>
+</html>

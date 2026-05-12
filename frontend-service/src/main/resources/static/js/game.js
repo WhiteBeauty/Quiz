@@ -1,8 +1,4 @@
-/**
- * game.js — WebSocket game client
- * Подключается к game-service через STOMP/SockJS,
- * управляет экранами и принимает/отправляет ответы через API.
- */
+
 (function () {
     'use strict';
 
@@ -90,7 +86,7 @@
         }
     }
 
-    // ---- Player chips (waiting screen) ----
+    // Player chips
     function addPlayerChip(username) {
         const grid = document.getElementById('players-grid');
         if (!grid) return;
@@ -104,7 +100,7 @@
         }
     }
 
-    // ---- Host controls ----
+    //Host controls
     window.startGame = function () {
         apiPost('/api/rooms/' + roomCode + '/start')
             .then(() => showScreen('game'))
@@ -136,7 +132,7 @@
         }
     };
 
-    // ---- Fetch current question from quiz ----
+    //Fetch current question from quiz
     function fetchCurrentQuestion(questionIndex) {
         apiGet('/api/rooms/' + roomCode)
             .then(room => {
@@ -151,7 +147,7 @@
             .catch(err => console.error('fetchQuestion error', err));
     }
 
-    // ---- Render question ----
+    // Render question
     function renderQuestion(question, index, total) {
         if (!question) {
             console.error('Question payload is empty');
@@ -209,7 +205,7 @@
         }
     }
 
-    // ---- Timer ----
+    // Timer
     function startTimer(seconds) {
         clearInterval(timerInterval);
         let remaining = seconds;
@@ -244,7 +240,7 @@
         });
     }
 
-    // ---- Submit answer ----
+    // Submit answer
     function submitAnswer(optionId, btn) {
         if (answeredThisRound) return;
         answeredThisRound = true;
@@ -278,7 +274,7 @@
         }
     }
 
-    // ---- Leaderboards ----
+    // Leaderboards
     function renderMidLeaderboard(entries) {
         const container = document.getElementById('mid-leaderboard');
         renderLeaderboardEntries(container, entries);
@@ -302,7 +298,7 @@
         `).join('');
     }
 
-    // ---- Toast notifications ----
+    // Toast notifications
     function showToast(message, type) {
         const toast = document.createElement('div');
         toast.style.cssText = `
@@ -326,7 +322,7 @@
     style.textContent = '@keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }';
     document.head.appendChild(style);
 
-    // ---- API helpers ----
+    //  API helpers
     function apiPost(path, body) {
         return fetch(baseUrl + path, {
             method: 'POST',
@@ -350,7 +346,7 @@
         }).then(res => res.ok ? res.json() : Promise.reject('HTTP ' + res.status));
     }
 
-    // ---- Init ----
+    //  Init
     connect();
 
     // Poll for players while waiting

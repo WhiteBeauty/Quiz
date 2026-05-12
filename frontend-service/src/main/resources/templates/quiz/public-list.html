@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ru">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Все квизы — QuizArena</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet"/>
+    <link rel="stylesheet" th:href="@{/css/style.css}"/>
+</head>
+<body>
+<nav class="navbar">
+    <a class="navbar-brand" th:href="@{/}"><span class="brand-icon">⬡</span><span>QuizArena</span></a>
+    <div class="navbar-links">
+        <a th:href="@{/quizzes/public}" class="active">Квизы</a>
+        <a th:href="@{/game/lobby}">Играть</a>
+        <a th:href="@{/leaderboard}">Рейтинг</a>
+    </div>
+    <div class="navbar-actions">
+        <a th:href="@{/dashboard}" class="btn btn-ghost">Кабинет</a>
+    </div>
+</nav>
+
+<div class="page-container">
+    <div class="page-header">
+        <h1>Публичные квизы</h1>
+        <a th:href="@{/quizzes/create}" class="btn btn-primary">+ Создать свой</a>
+    </div>
+
+    <form th:action="@{/quizzes/public}" method="get" class="search-form">
+        <div class="search-bar">
+            <input type="text" name="search" placeholder="Поиск по названию или категории..."
+                   th:value="${search}"/>
+            <button type="submit" class="btn btn-primary">Найти</button>
+            <a th:href="@{/quizzes/public}" class="btn btn-ghost" th:if="${search != null}">Сбросить</a>
+        </div>
+    </form>
+
+    <div class="alert alert-error" th:if="${error}" th:text="${error}"></div>
+    <div class="alert alert-success" th:if="${param.quizDeleted != null and param.quizDeleted[0] == 'true'}">Квиз удален.</div>
+    <div class="alert alert-error" th:if="${param.quizDeleted != null and param.quizDeleted[0] == 'false'}">Не удалось удалить квиз.</div>
+
+    <div th:if="${quizzes == null or quizzes.empty}" class="empty-state large">
+        <div class="empty-icon">🔍</div>
+        <p th:text="${search != null ? 'По запросу «' + search + '» ничего не найдено' : 'Квизов пока нет'}">Пусто</p>
+    </div>
+
+    <div class="quizzes-grid" th:unless="${quizzes == null or quizzes.empty}">
+        <div class="quiz-card" th:each="quiz : ${quizzes}">
+            <div class="quiz-card-header">
+                <span class="quiz-category" th:text="${quiz.category ?: 'Разное'}">Категория</span>
+                <span class="quiz-count" th:text="${quiz.questionCount + ' вопр.'}">0 вопр.</span>
+            </div>
+            <h3 class="quiz-title" th:text="${quiz.title}">Название квиза</h3>
+            <p class="quiz-desc" th:text="${quiz.description}" th:if="${quiz.description != null}">Описание</p>
+            <p class="quiz-author" th:text="'by ' + ${quiz.authorUsername}">by author</p>
+            <div class="quiz-card-footer">
+                <a th:href="@{/game/lobby}" class="btn btn-primary btn-sm">Играть →</a>
+                <form th:if="${currentUsername != null and currentUsername == quiz.authorUsername}"
+                      th:action="@{/quizzes/{id}/delete(id=${quiz.id})}"
+                      method="post"
+                      style="display:inline; margin-left:8px;"
+                      onsubmit="return confirm('Удалить этот квиз?')">
+                    <input type="hidden" name="from" value="public"/>
+                    <button type="submit" class="btn btn-danger btn-sm">Удалить</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<footer class="footer"><p>QuizArena © 2026</p></footer>
+</body>
+</html>
