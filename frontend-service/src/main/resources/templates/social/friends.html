@@ -49,6 +49,9 @@
                         </form>
                     </td>
                 </tr>
+                <tr th:if="${searchResults.empty}">
+                    <td colspan="3" style="text-align:center; padding:1rem; opacity:0.7;">Пользователи не найдены</td>
+                </tr>
             </table>
         </div>
     </section>

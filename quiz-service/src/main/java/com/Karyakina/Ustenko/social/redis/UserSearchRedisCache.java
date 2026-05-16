@@ -15,14 +15,14 @@ import java.util.List;
 @RequiredArgsConstructor
 public class UserSearchRedisCache {
 
-    private static final Duration TTL = Duration.ofSeconds(30);
+    private static final Duration TTL = Duration.ofMinutes(5);
     private static final String PREFIX = "friends:search:";
 
     private final StringRedisTemplate redisTemplate;
     private final ObjectMapper objectMapper;
 
     private static String key(Long userId, String q) {
-        return PREFIX + userId + ":" + Integer.toHexString(q.trim().toLowerCase().hashCode());
+        return PREFIX + userId + ":" + q.trim().toLowerCase().replaceAll("[^a-z0-9@.]", "_");
     }
 
     public List<UserSearchHitDto> get(Long userId, String q) {

@@ -1,6 +1,8 @@
 package com.Karyakina.Ustenko.social.service.impl;
 
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
@@ -29,6 +31,7 @@ import java.util.Optional;
 public class FriendshipServiceImpl implements FriendshipService {
 
     private static final int SEARCH_PAGE_SIZE = 20;
+    private static final Logger log = LoggerFactory.getLogger(FriendshipServiceImpl.class);
 
     private final FriendshipDao friendshipDao;
     private final UserDao userDao;
@@ -50,11 +53,13 @@ public class FriendshipServiceImpl implements FriendshipService {
         if (q.length() < 2) {
             throw new IllegalArgumentException("Введите не менее 2 символов");
         }
-        List<UserSearchHitDto> cached = userSearchRedisCache.get(me, q);
-        if (cached != null) {
-            return cached;
-        }
+
+        log.info("Поиск пользователей: query={}, userId={}", q, me);
+
+        // Пропускаем кэш, если Redis недоступен — ищем напрямую в БД
         List<User> found = userDao.searchByNicknameOrEmail(me, q, PageRequest.of(0, SEARCH_PAGE_SIZE));
+        log.info("Найдено пользователей: {}", found.size());
+
         List<UserSearchHitDto> out = new ArrayList<>();
         for (User u : found) {
             UserSearchHitDto dto = new UserSearchHitDto();
@@ -62,8 +67,16 @@ public class FriendshipServiceImpl implements FriendshipService {
             dto.setUsername(u.getUsername());
             dto.setEmail(u.getEmail());
             out.add(dto);
+            log.debug("Найден пользователь: id={}, username={}, email={}", u.getId(), u.getUsername(), u.getEmail());
         }
-        userSearchRedisCache.put(me, q, out);
+
+        // Пытаемся кэшировать, но не если ошибка
+        try {
+            userSearchRedisCache.put(me, q, out);
+        } catch (Exception e) {
+            // Кэш недоступен — продолжаем без него
+            log.warn("Redis cache unavailable for search: {}", e.getMessage());
+        }
         return out;
     }
 

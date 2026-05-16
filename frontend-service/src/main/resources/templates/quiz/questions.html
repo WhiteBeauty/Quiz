@@ -10,6 +10,11 @@
 <body>
 <nav class="navbar">
     <a class="navbar-brand" th:href="@{/}"><span class="brand-icon">⬡</span><span>QuizArena</span></a>
+    <div class="navbar-links">
+        <a th:href="@{/quizzes/public}">Квизы</a>
+        <a th:href="@{/game/lobby}">Играть</a>
+        <a th:href="@{/friends}">Друзья</a>
+    </div>
     <div class="navbar-actions">
         <a th:href="@{/dashboard}" class="btn btn-ghost">Кабинет</a>
     </div>
