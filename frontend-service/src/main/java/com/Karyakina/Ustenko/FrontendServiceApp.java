@@ -2,14 +2,16 @@ package com.Karyakina.Ustenko;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.autoconfigure.security.reactive.ReactiveSecurityAutoConfiguration;
+import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
+import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
 
 @SpringBootApplication(exclude = {
-        ReactiveSecurityAutoConfiguration.class
+    SecurityAutoConfiguration.class,
+    DataSourceAutoConfiguration.class
 })
 public class FrontendServiceApp {
-    public static void main(String[] args) {
 
+    public static void main(String[] args) {
         SpringApplication.run(FrontendServiceApp.class, args);
     }
 }

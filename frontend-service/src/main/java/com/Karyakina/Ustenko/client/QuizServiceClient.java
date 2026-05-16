@@ -9,6 +9,7 @@ import com.Karyakina.Ustenko.dto.*;
 import com.Karyakina.Ustenko.dto.social.*;
 
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 
@@ -167,7 +168,7 @@ public class QuizServiceClient {
     public List<UserSearchHitDto> searchFriends(String q, String token) {
         return webClientBuilder.build()
                 .get()
-                .uri(quizServiceUrl + "/api/friends/search?q=" + URLEncoder.encode(q, java.nio.charset.StandardCharsets.UTF_8))
+                .uri(quizServiceUrl + "/api/friends/search?q=" + URLEncoder.encode(q, StandardCharsets.UTF_8))
                 .header("Authorization", "Bearer " + token)
                 .retrieve()
                 .bodyToMono(new ParameterizedTypeReference<List<UserSearchHitDto>>() {})
@@ -280,7 +281,7 @@ public class QuizServiceClient {
     public ChatHistoryPageDto getChatMessages(Long peerUserId, String before, int limit, String token) {
         StringBuilder uri = new StringBuilder(quizServiceUrl + "/api/chat/" + peerUserId + "/messages?limit=" + limit);
         if (before != null && !before.isBlank()) {
-            uri.append("&before=").append(URLEncoder.encode(before, java.nio.charset.StandardCharsets.UTF_8));
+            uri.append("&before=").append(URLEncoder.encode(before, StandardCharsets.UTF_8));
         }
         return webClientBuilder.build()
                 .get()

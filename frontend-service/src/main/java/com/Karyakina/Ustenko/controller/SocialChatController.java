@@ -2,6 +2,8 @@ package com.Karyakina.Ustenko.controller;
 
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -18,6 +20,8 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SocialChatController {
 
+    private static final Logger log = LoggerFactory.getLogger(SocialChatController.class);
+
     private final QuizServiceClient quizServiceClient;
     private final HomeController homeController;
 
@@ -29,11 +33,13 @@ public class SocialChatController {
             Model model) {
         String token = homeController.extractToken(request);
         if (token == null) {
+            log.warn("Чат: токен не найден, пользователь не аутентифицирован");
             return "redirect:/auth/login?redirect=/friends/chat/" + peerUserId;
         }
         UserDto me;
         try {
             me = quizServiceClient.getCurrentUser(token);
+            log.info("Чат: загрузка сообщений для userId={}, peerUserId={}, before={}", me.getId(), peerUserId, before);
             ChatHistoryPageDto page = quizServiceClient.getChatMessages(peerUserId, before, 40, token);
             model.addAttribute("messages", page.getMessages());
             model.addAttribute("hasMore", page.isHasMore());
@@ -44,7 +50,9 @@ public class SocialChatController {
             model.addAttribute("peerUsername", peerName);
             model.addAttribute("user", me);
             markReadIfNeeded(page.getMessages(), me.getId(), peerUserId, token);
+            log.info("Чат: успешно загружено {} сообщений", page.getMessages().size());
         } catch (Exception e) {
+            log.error("Чат: ошибка при загрузке страницы чата с peerUserId={}", peerUserId, e);
             return "redirect:/friends?error=chat";
         }
         return "social/chat";
@@ -86,11 +94,15 @@ public class SocialChatController {
             HttpServletRequest request) {
         String token = homeController.extractToken(request);
         if (token == null) {
+            log.warn("Отправка сообщения: токен не найден");
             return "redirect:/auth/login?redirect=/friends/chat/" + peerUserId;
         }
         try {
+            log.info("Отправка сообщения: к={}, длина={}", peerUserId, text.length());
             quizServiceClient.sendChatMessage(peerUserId, text, token);
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            log.error("Отправка сообщения: ошибка при отправке сообщения peerUserId={}", peerUserId, e);
+            return "redirect:/friends?error=chat";
         }
         return "redirect:/friends/chat/" + peerUserId;
     }
