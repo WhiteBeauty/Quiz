@@ -18,6 +18,9 @@ public final class SecurityUtils {
         if (details instanceof Long id) {
             return id;
         }
+        if (details instanceof Number num) {
+            return num.longValue();
+        }
         throw new IllegalStateException("Не удалось определить пользователя");
     }
 
@@ -27,7 +30,13 @@ public final class SecurityUtils {
             return null;
         }
         Object details = authentication.getDetails();
-        return details instanceof Long id ? id : null;
+        if (details instanceof Long id) {
+            return id;
+        }
+        if (details instanceof Number num) {
+            return num.longValue();
+        }
+        return null;
     }
 
     public static String requireEmail(Authentication authentication) {

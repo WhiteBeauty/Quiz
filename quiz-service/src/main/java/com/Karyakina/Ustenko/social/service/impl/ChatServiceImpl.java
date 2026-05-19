@@ -1,8 +1,8 @@
 package com.Karyakina.Ustenko.social.service.impl;
 
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.TypedQuery;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,6 +29,7 @@ public class ChatServiceImpl implements ChatService {
     private final ChatMessageDao chatMessageDao;
     private final FriendshipService friendshipService;
     private final RedisRateLimiter redisRateLimiter;
+    private final EntityManager entityManager;
 
     @Override
     @Transactional
@@ -43,8 +44,7 @@ public class ChatServiceImpl implements ChatService {
         int size = Math.min(Math.max(limit, 1), 100);
         LocalDateTime before = parseBefore(beforeIso);
         chatMessageDao.markDeliveredToMeFromPeer(me, peerUserId, LocalDateTime.now());
-        Page<ChatMessage> page = chatMessageDao.findConversation(me, peerUserId, before, PageRequest.of(0, size));
-        List<ChatMessage> chunk = page.getContent();
+        List<ChatMessage> chunk = findConversation(me, peerUserId, before, size);
         List<ChatMessageDto> dtos = new ArrayList<>(chunk.size());
         for (int i = chunk.size() - 1; i >= 0; i--) {
             dtos.add(toDto(chunk.get(i)));
@@ -53,6 +53,24 @@ public class ChatServiceImpl implements ChatService {
         out.setMessages(dtos);
         out.setHasMore(chunk.size() == size);
         return out;
+    }
+
+    private List<ChatMessage> findConversation(Long userA, Long userB, LocalDateTime before, int limit) {
+        StringBuilder jpql = new StringBuilder(
+            "SELECT m FROM ChatMessage m WHERE ((m.senderId = :a AND m.recipientId = :b) OR (m.senderId = :b AND m.recipientId = :a))"
+        );
+        if (before != null) {
+            jpql.append(" AND m.createdAt < :before");
+        }
+        jpql.append(" ORDER BY m.createdAt DESC");
+        TypedQuery<ChatMessage> query = entityManager.createQuery(jpql.toString(), ChatMessage.class);
+        query.setParameter("a", userA);
+        query.setParameter("b", userB);
+        if (before != null) {
+            query.setParameter("before", before);
+        }
+        query.setMaxResults(limit);
+        return query.getResultList();
     }
 
     private static LocalDateTime parseBefore(String beforeIso) {
