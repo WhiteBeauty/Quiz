@@ -78,6 +78,12 @@
             <artifactId>spring-boot-starter-mail</artifactId>
         </dependency>
 
+        <!-- Spring Cloud for .env support -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-bootstrap</artifactId>
+        </dependency>
+
         <!-- Redis: кэш и rate limiting -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

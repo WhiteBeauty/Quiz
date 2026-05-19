@@ -23,6 +23,10 @@ target/
 Thumbs.db
 *.log
 
+# Environment variables (secrets!)
+.env
+**/.env
+
 # Maven Wrapper (не используем)
 .mvn/
 mvnw

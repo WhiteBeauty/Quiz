@@ -21,6 +21,18 @@ spring:
       port: ${REDIS_PORT:6379}
       timeout: 2s
 
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: elizark777@gmail.com
+    password: aahyvugymfgptayg
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
 jwt:
   secret: bXlTdXBlclNlY3JldEtleUZvckpXVFRva2VuR2VuZXJhdGlvbjEyMw==
   expiration-ms: 86400000
@@ -29,4 +41,5 @@ app:
   frontend-base-url: ${FRONTEND_BASE_URL:http://localhost:8082}
   invite-token-ttl-hours: ${INVITE_TTL_HOURS:72}
   mail:
-    enabled: ${MAIL_ENABLED:false}
+    enabled: true
+
