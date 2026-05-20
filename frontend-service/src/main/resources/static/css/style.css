@@ -89,8 +89,28 @@ em { font-style: italic; color: var(--accent); }
   padding: 6px 14px; border-radius: var(--radius);
   font-family: 'Syne', sans-serif; font-size: 0.875rem; font-weight: 600;
   color: var(--gray-600); text-decoration: none; transition: all 0.15s;
+  position: relative;
 }
 .navbar-links a:hover, .navbar-links a.active { color: var(--black); background: var(--gray-100); }
+
+.nav-notification-badge {
+  position: absolute;
+  top: -6px;
+  right: -8px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  background: var(--accent);
+  color: var(--white);
+  font-family: 'Syne', sans-serif;
+  font-size: 0.7rem;
+  font-weight: 700;
+  border-radius: 10px;
+  border: 2px solid var(--white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 .navbar-actions { display: flex; gap: 8px; align-items: center; margin-left: 16px; }
 .nav-user { font-size: 0.85rem; color: var(--gray-600); font-style: italic; }
 

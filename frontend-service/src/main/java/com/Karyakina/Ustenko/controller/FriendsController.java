@@ -3,6 +3,7 @@ package com.Karyakina.Ustenko.controller;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -20,6 +21,7 @@ import java.util.Map;
 @Controller
 @RequestMapping("/friends")
 @RequiredArgsConstructor
+@Slf4j
 public class FriendsController {
 
     private final QuizServiceClient quizServiceClient;
@@ -51,6 +53,21 @@ public class FriendsController {
             }
             model.addAttribute("quizzesForInvite", new ArrayList<>(byId.values()));
             model.addAttribute("myRooms", nullToEmpty(gameServiceClient.getMyRooms(token)));
+
+            Map<Long, Long> unreadBySender = new HashMap<>();
+            try {
+                Map<Object, Object> rawUnread = quizServiceClient.getUnreadCountBySender(token);
+                if (rawUnread != null && !rawUnread.isEmpty()) {
+                    for (Map.Entry<Object, Object> entry : rawUnread.entrySet()) {
+                        Long senderId = Long.valueOf(String.valueOf(entry.getKey()));
+                        Long count = Long.valueOf(String.valueOf(entry.getValue()));
+                        unreadBySender.put(senderId, count);
+                    }
+                }
+            } catch (Exception e) {
+                log.error("Error loading unread counts", e);
+            }
+            model.addAttribute("unreadBySender", unreadBySender);
             HttpSession session = request.getSession(false);
             if (session != null) {
                 model.addAttribute("searchResults", session.getAttribute("friendSearchResults"));
@@ -68,6 +85,7 @@ public class FriendsController {
             model.addAttribute("outgoing", List.of());
             model.addAttribute("quizzesForInvite", List.of());
             model.addAttribute("myRooms", List.of());
+            model.addAttribute("unreadBySender", new HashMap<Long, Long>());
         }
         if (error != null) {
             model.addAttribute("error", switch (error) {
@@ -194,5 +212,9 @@ public class FriendsController {
 
     private static <T> List<T> nullToEmpty(List<T> list) {
         return list == null ? List.of() : list;
+    }
+
+    private static <K, V> Map<K, V> nullToEmptyMap(Map<K, V> map) {
+        return map == null ? Map.of() : map;
     }
 }

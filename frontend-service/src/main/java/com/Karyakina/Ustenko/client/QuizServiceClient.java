@@ -312,4 +312,33 @@ public class QuizServiceClient {
                 .toBodilessEntity()
                 .block();
     }
+
+    public Long getUnreadMessagesCount(String token) {
+        try {
+            return webClientBuilder.build()
+                    .get()
+                    .uri(quizServiceUrl + "/api/chat/unread-count")
+                    .header("Authorization", "Bearer " + token)
+                    .retrieve()
+                    .bodyToMono(Long.class)
+                    .block();
+        } catch (Exception e) {
+            return 0L;
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    public Map<Object, Object> getUnreadCountBySender(String token) {
+        try {
+            return webClientBuilder.build()
+                    .get()
+                    .uri(quizServiceUrl + "/api/chat/unread-by-sender")
+                    .header("Authorization", "Bearer " + token)
+                    .retrieve()
+                    .bodyToMono(Map.class)
+                    .block();
+        } catch (Exception e) {
+            return Map.of();
+        }
+    }
 }

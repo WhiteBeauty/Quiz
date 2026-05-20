@@ -13,7 +13,9 @@
     <div class="navbar-links">
         <a th:href="@{/quizzes/public}">Квизы</a>
         <a th:href="@{/game/lobby}">Играть</a>
-        <a th:href="@{/friends}">Друзья</a>
+        <a th:href="@{/friends}">Друзья
+            <span class="nav-notification-badge" th:if="${unreadMessagesCount > 0}" th:text="${unreadMessagesCount}"></span>
+        </a>
         <a th:href="@{/leaderboard}">Рейтинг</a>
     </div>
     <div class="navbar-actions">
@@ -89,8 +91,13 @@
         <h2>Мои друзья</h2>
         <div th:if="${friends == null or friends.empty}" class="empty-state"><p>Список пуст</p></div>
         <div th:each="f : ${friends}" class="quiz-list-item" style="display:flex; justify-content:space-between; align-items:center;">
-            <span th:text="'@' + ${f.username}">@friend</span>
-            <span>
+                <span th:with="count=${unreadBySender.get(f.userId)}" style="display:flex; align-items:center; gap:8px;">
+                <span th:text="'@' + ${f.username}">@friend</span>
+                <span th:if="${count != null and count > 0}"
+                      style="display:inline-block; background:#ff0000; color:#fff; font-size:12px; font-weight:bold; padding:2px 8px; border-radius:10px; min-width:18px; text-align:center;"
+                      th:text="${count}">99</span>
+            </span>
+            <span style="display:flex; gap:8px; align-items:center;">
                 <a th:href="@{'/friends/chat/' + ${f.userId}}" class="btn btn-sm btn-outline">Чат</a>
                 <form th:action="@{/friends/remove}" method="post" style="display:inline;">
                     <input type="hidden" name="userId" th:value="${f.userId}"/>

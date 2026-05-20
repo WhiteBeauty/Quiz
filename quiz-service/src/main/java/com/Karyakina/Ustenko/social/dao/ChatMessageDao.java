@@ -7,6 +7,7 @@ import org.springframework.data.repository.query.Param;
 import com.Karyakina.Ustenko.social.model.ChatMessage;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public interface ChatMessageDao extends JpaRepository<ChatMessage, Long> {
 
@@ -23,4 +24,17 @@ public interface ChatMessageDao extends JpaRepository<ChatMessage, Long> {
             WHERE m.recipientId = :me AND m.senderId = :peer AND m.id <= :upToId AND m.readAt IS NULL
             """)
     int markReadUpTo(@Param("me") Long me, @Param("peer") Long peer, @Param("upToId") Long upToId, @Param("now") LocalDateTime now);
+
+    @Query("""
+            SELECT m.senderId, COUNT(m) FROM ChatMessage m
+            WHERE m.recipientId = :userId AND m.readAt IS NULL
+            GROUP BY m.senderId
+            """)
+    List<Object[]> countUnreadBySender(@Param("userId") Long userId);
+
+    @Query("""
+            SELECT COUNT(m) FROM ChatMessage m
+            WHERE m.recipientId = :userId AND m.readAt IS NULL
+            """)
+    long countUnreadMessages(@Param("userId") Long userId);
 }

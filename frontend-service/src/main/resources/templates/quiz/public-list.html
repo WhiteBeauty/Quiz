@@ -13,7 +13,9 @@
     <div class="navbar-links">
         <a th:href="@{/quizzes/public}" class="active">Квизы</a>
         <a th:href="@{/game/lobby}">Играть</a>
-        <a th:href="@{/friends}">Друзья</a>
+        <a th:href="@{/friends}">Друзья
+            <span class="nav-notification-badge" th:if="${unreadMessagesCount > 0}" th:text="${unreadMessagesCount}"></span>
+        </a>
         <a th:href="@{/leaderboard}">Рейтинг</a>
     </div>
     <div class="navbar-actions">

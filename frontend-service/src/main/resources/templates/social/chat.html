@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+﻿﻿﻿﻿﻿<!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" lang="ru">
 <head>
     <meta charset="UTF-8"/>
@@ -11,7 +11,9 @@
 <nav class="navbar">
     <a class="navbar-brand" th:href="@{/}"><span class="brand-icon">⬡</span><span>QuizArena</span></a>
     <div class="navbar-links">
-        <a th:href="@{/friends}">← Друзья</a>
+        <a th:href="@{/friends}">← Друзья
+            <span class="nav-notification-badge" th:if="${unreadMessagesCount > 0}" th:text="${unreadMessagesCount}"></span>
+        </a>
     </div>
     <div class="navbar-actions">
         <span class="nav-user" th:text="'@' + ${user.username}">@me</span>
@@ -106,10 +108,23 @@
     }
 
     function hydrateExisting() {
+        let maxIncomingId = null;
         chatMessages.querySelectorAll('.chat-message').forEach(el => {
             const id = Number(el.dataset.id);
             if (id) knownIds.add(id);
+            if (el.classList.contains('other') && id) {
+                maxIncomingId = Math.max(maxIncomingId || 0, id);
+            }
         });
+        if (maxIncomingId) markRead(maxIncomingId);
+    }
+
+    async function markRead(upToMessageId) {
+        try {
+            await fetch('/friends/chat/' + peerId + '/read?upToMessageId=' + upToMessageId, { method: 'POST' });
+        } catch (e) {
+            // ignore
+        }
     }
 
     async function loadMessages() {
@@ -118,12 +133,19 @@
             if (!res.ok) return;
             const data = await res.json();
             let added = false;
+            let maxIncomingId = null;
             if (data.messages) {
                 data.messages.forEach(m => {
-                    if (appendMessage(m)) added = true;
+                    if (appendMessage(m)) {
+                        added = true;
+                        if (String(m.senderId) === String(peerId)) {
+                            maxIncomingId = Math.max(maxIncomingId || 0, m.id);
+                        }
+                    }
                 });
             }
             if (added) scrollToBottom();
+            if (maxIncomingId) await markRead(maxIncomingId);
         } catch (e) {
             // silently ignore polling errors
         }
@@ -154,6 +176,14 @@
     hydrateExisting();
     scrollToBottom();
     chatForm.addEventListener('submit', sendMessage);
+
+    chatInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            chatForm.dispatchEvent(new Event('submit'));
+        }
+    });
+
     setInterval(loadMessages, 3000);
 })();
 </script>

@@ -9,6 +9,8 @@ import com.Karyakina.Ustenko.social.dto.ChatHistoryPageDto;
 import com.Karyakina.Ustenko.social.dto.ChatSendDto;
 import com.Karyakina.Ustenko.social.service.ChatService;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/chat")
 @RequiredArgsConstructor
@@ -41,5 +43,15 @@ public class ChatController {
             Authentication authentication) {
         chatService.markReadUpTo(peerUserId, upToMessageId, authentication);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/unread-count")
+    public ResponseEntity<Long> unreadCount(Authentication authentication) {
+        return ResponseEntity.ok(chatService.getUnreadMessagesCount(authentication));
+    }
+
+    @GetMapping("/unread-by-sender")
+    public ResponseEntity<Map<Long, Long>> unreadBySender(Authentication authentication) {
+        return ResponseEntity.ok(chatService.getUnreadCountBySender(authentication));
     }
 }

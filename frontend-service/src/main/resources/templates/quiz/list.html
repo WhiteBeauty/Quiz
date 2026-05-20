@@ -13,7 +13,9 @@
     <div class="nav-links">
         <a th:href="@{/quizzes}" class="nav-link active">Квизы</a>
         <a th:href="@{/game/lobby}" class="nav-link">Играть</a>
-        <a th:href="@{/friends}" class="nav-link">Друзья</a>
+        <a th:href="@{/friends}" class="nav-link">Друзья
+            <span class="nav-notification-badge" th:if="${unreadMessagesCount > 0}" th:text="${unreadMessagesCount}"></span>
+        </a>
         <div class="nav-user">
             <span class="nav-username" th:text="${user.username}">User</span>
             <a th:href="@{/logout}" class="btn btn-outline btn-sm">Выйти</a>

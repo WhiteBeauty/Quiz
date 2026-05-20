@@ -140,6 +140,24 @@ public class SocialChatController {
         return ResponseEntity.noContent().build();
     }
 
+    @PostMapping("/{peerUserId}/read")
+    @ResponseBody
+    public ResponseEntity<Void> markReadAjax(
+            @PathVariable Long peerUserId,
+            @RequestParam Long upToMessageId,
+            HttpServletRequest request) {
+        String token = homeController.extractToken(request);
+        if (token == null) {
+            return ResponseEntity.status(401).build();
+        }
+        try {
+            quizServiceClient.markChatRead(peerUserId, upToMessageId, token);
+        } catch (Exception e) {
+            return ResponseEntity.status(500).build();
+        }
+        return ResponseEntity.noContent().build();
+    }
+
     private static <T> List<T> nullToEmpty(List<T> list) {
         return list == null ? List.of() : list;
     }

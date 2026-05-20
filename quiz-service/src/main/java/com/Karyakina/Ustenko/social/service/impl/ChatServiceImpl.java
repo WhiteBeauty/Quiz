@@ -20,7 +20,9 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -118,6 +120,27 @@ public class ChatServiceImpl implements ChatService {
             throw new IllegalArgumentException("Некорректный идентификатор сообщения");
         }
         chatMessageDao.markReadUpTo(me, peerUserId, upToMessageId, LocalDateTime.now());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public long getUnreadMessagesCount(Authentication authentication) {
+        Long me = SecurityUtils.requireUserId(authentication);
+        return chatMessageDao.countUnreadMessages(me);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Map<Long, Long> getUnreadCountBySender(Authentication authentication) {
+        Long me = SecurityUtils.requireUserId(authentication);
+        List<Object[]> rows = chatMessageDao.countUnreadBySender(me);
+        Map<Long, Long> result = new HashMap<>();
+        for (Object[] row : rows) {
+            Long senderId = ((Number) row[0]).longValue();
+            Long count = ((Number) row[1]).longValue();
+            result.put(senderId, count);
+        }
+        return result;
     }
 
     private static ChatMessageDto toDto(ChatMessage m) {
