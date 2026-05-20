@@ -4,6 +4,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -105,6 +106,38 @@ public class SocialChatController {
             return "redirect:/friends?error=chat";
         }
         return "redirect:/friends/chat/" + peerUserId;
+    }
+
+    @GetMapping("/{peerUserId}/poll")
+    @ResponseBody
+    public ResponseEntity<ChatHistoryPageDto> pollMessages(
+            @PathVariable Long peerUserId,
+            HttpServletRequest request) {
+        String token = homeController.extractToken(request);
+        if (token == null) {
+            return ResponseEntity.status(401).build();
+        }
+        ChatHistoryPageDto page = quizServiceClient.getChatMessages(peerUserId, null, 40, token);
+        return ResponseEntity.ok(page);
+    }
+
+    @PostMapping("/{peerUserId}/send-ajax")
+    @ResponseBody
+    public ResponseEntity<Void> sendAjax(
+            @PathVariable Long peerUserId,
+            @RequestParam String text,
+            HttpServletRequest request) {
+        String token = homeController.extractToken(request);
+        if (token == null) {
+            return ResponseEntity.status(401).build();
+        }
+        try {
+            quizServiceClient.sendChatMessage(peerUserId, text, token);
+        } catch (Exception e) {
+            log.error("Ошибка AJAX-отправки сообщения", e);
+            return ResponseEntity.status(500).build();
+        }
+        return ResponseEntity.noContent().build();
     }
 
     private static <T> List<T> nullToEmpty(List<T> list) {

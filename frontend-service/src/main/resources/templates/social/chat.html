@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" lang="ru">
 <head>
     <meta charset="UTF-8"/>
@@ -18,34 +18,144 @@
     </div>
 </nav>
 
-<div class="dashboard" style="max-width: 720px; margin: 0 auto;">
-    <h1 th:text="'Чат с @' + ${peerUsername}">Чат</h1>
-
-    <div th:if="${hasMore}" style="margin: 1rem 0;">
-        <a class="btn btn-sm btn-outline"
-           th:href="@{/friends/chat/{id}(id=${peerUserId},before=${oldestCursor})}">Загрузить старые</a>
-    </div>
-
-    <div class="dashboard-section" style="min-height: 200px;">
-        <div th:each="m : ${messages}"
-             th:style="${m.senderId == user.id} ? 'margin-bottom:.75rem;padding:.5rem;border-radius:8px;background:rgba(99,102,241,.12);margin-left:2rem;' : 'margin-bottom:.75rem;padding:.5rem;border-radius:8px;background:rgba(255,255,255,.06);margin-right:2rem;'">
-            <div style="font-size:.75rem; opacity:.7;" th:text="${m.createdAt}">time</div>
-            <div th:text="${m.body}">text</div>
-            <div style="font-size:.65rem; opacity:.5; margin-top:.25rem;"
-                 th:if="${m.senderId == user.id}">
-                <span th:if="${m.deliveredAt != null}">доставлено</span>
-                <span th:if="${m.readAt != null}"> · прочитано</span>
+<div class="chat-page">
+    <div class="chat-container">
+        <div class="chat-header">
+            <h1 th:text="'Чат с @' + ${peerUsername}">Чат</h1>
+            <div style="display:flex; gap:8px; align-items:center;">
+                <a th:if="${hasMore}" class="btn btn-sm btn-outline"
+                   th:href="@{/friends/chat/{id}(id=${peerUserId},before=${oldestCursor})}">Загрузить старые</a>
+                <a class="btn btn-sm btn-ghost" th:href="@{/friends}">← Друзья</a>
             </div>
         </div>
-    </div>
 
-    <form th:action="@{'/friends/chat/' + ${peerUserId} + '/send'}" method="post" class="auth-form" style="margin-top:1rem;">
-        <div class="form-group">
-            <label>Сообщение</label>
-            <textarea name="text" rows="3" required maxlength="8000"></textarea>
+        <div id="chatMessages" class="chat-messages"
+             th:data-peer-id="${peerUserId}"
+             th:data-my-id="${user.id}">
+            <div th:each="m : ${messages}"
+                 th:class="'chat-message ' + (${m.senderId == user.id} ? 'own' : 'other')"
+                 th:data-id="${m.id}">
+                <div class="chat-meta" th:text="${m.createdAt}">time</div>
+                <div th:text="${m.body}">text</div>
+                <div class="chat-status" th:if="${m.senderId == user.id}">
+                    <span th:if="${m.deliveredAt != null}">доставлено</span>
+                    <span th:if="${m.readAt != null}"> · прочитано</span>
+                </div>
+            </div>
         </div>
-        <button type="submit" class="btn btn-primary">Отправить</button>
-    </form>
+
+        <form id="chatForm" class="chat-input-area" th:action="@{'/friends/chat/' + ${peerUserId} + '/send-ajax'}" method="post">
+            <textarea id="chatInput" name="text" rows="2" required maxlength="8000" placeholder="Напишите сообщение..."></textarea>
+            <button type="submit" class="btn btn-primary">Отправить</button>
+        </form>
+    </div>
 </div>
+
+<script>
+(function() {
+    const chatMessages = document.getElementById('chatMessages');
+    const chatForm = document.getElementById('chatForm');
+    const chatInput = document.getElementById('chatInput');
+    const peerId = chatMessages.dataset.peerId;
+    const myId = chatMessages.dataset.myId;
+    const knownIds = new Set();
+
+    function formatDate(iso) {
+        if (!iso) return '';
+        const d = new Date(iso);
+        if (isNaN(d)) return iso;
+        return d.toLocaleString('ru-RU', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+    }
+
+    function scrollToBottom() {
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function createMessageEl(m) {
+        const div = document.createElement('div');
+        div.className = 'chat-message ' + (String(m.senderId) === String(myId) ? 'own' : 'other');
+        div.dataset.id = m.id;
+
+        const meta = document.createElement('div');
+        meta.className = 'chat-meta';
+        meta.textContent = formatDate(m.createdAt);
+        div.appendChild(meta);
+
+        const body = document.createElement('div');
+        body.textContent = m.body;
+        div.appendChild(body);
+
+        if (String(m.senderId) === String(myId)) {
+            const status = document.createElement('div');
+            status.className = 'chat-status';
+            let s = '';
+            if (m.deliveredAt) s += 'доставлено';
+            if (m.readAt) s += ' · прочитано';
+            status.textContent = s;
+            div.appendChild(status);
+        }
+
+        return div;
+    }
+
+    function appendMessage(m) {
+        if (knownIds.has(m.id)) return false;
+        knownIds.add(m.id);
+        chatMessages.appendChild(createMessageEl(m));
+        return true;
+    }
+
+    function hydrateExisting() {
+        chatMessages.querySelectorAll('.chat-message').forEach(el => {
+            const id = Number(el.dataset.id);
+            if (id) knownIds.add(id);
+        });
+    }
+
+    async function loadMessages() {
+        try {
+            const res = await fetch('/friends/chat/' + peerId + '/poll?limit=40');
+            if (!res.ok) return;
+            const data = await res.json();
+            let added = false;
+            if (data.messages) {
+                data.messages.forEach(m => {
+                    if (appendMessage(m)) added = true;
+                });
+            }
+            if (added) scrollToBottom();
+        } catch (e) {
+            // silently ignore polling errors
+        }
+    }
+
+    async function sendMessage(e) {
+        e.preventDefault();
+        const text = chatInput.value.trim();
+        if (!text) return;
+        const formData = new URLSearchParams();
+        formData.append('text', text);
+
+        try {
+            const res = await fetch('/friends/chat/' + peerId + '/send-ajax', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: formData
+            });
+            if (res.ok) {
+                chatInput.value = '';
+                await loadMessages();
+            }
+        } catch (e) {
+            alert('Не удалось отправить сообщение');
+        }
+    }
+
+    hydrateExisting();
+    scrollToBottom();
+    chatForm.addEventListener('submit', sendMessage);
+    setInterval(loadMessages, 3000);
+})();
+</script>
 </body>
 </html>

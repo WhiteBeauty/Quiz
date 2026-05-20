@@ -93,7 +93,7 @@ public class HomeController {
         return "leaderboard";
     }
 
-    String extractToken(HttpServletRequest request) {
+    public String extractToken(HttpServletRequest request) {
         if (request.getCookies() == null) return null;
         for (var cookie : request.getCookies()) {
             if ("JWT_TOKEN".equals(cookie.getName())) {
